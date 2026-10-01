@@ -201,6 +201,8 @@ async def run(provider, mode, case, emit=lambda event: None):
     async def call(role, stage, **kwargs):
         call_started = time.perf_counter()
         try:
+            if stage == 'draft' and getattr(provider, 'supports_streaming', False):
+                kwargs['on_delta'] = lambda delta: event('draft_delta', delta=delta, status='generating')
             result = await provider.generate(role, stage, case['question'], case=case, **kwargs)
         except asyncio.CancelledError:
             calls.append({'role': role, 'stage': stage, 'error': 'CancelledError',
@@ -246,6 +248,7 @@ async def run(provider, mode, case, emit=lambda event: None):
     return {'case_id': case['id'], 'mode': mode, 'question': case['question'], 'draft': draft,
             'answer': answer, 'status': events[-1]['status'], 'events': events, 'calls': calls,
             'first_answer_ms': first['elapsed_ms'] if first.get('answer') is not None else None,
+            'first_token_ms': next((e['elapsed_ms'] for e in events if e['event'] == 'draft_delta'), None),
             'final_ms': events[-1]['elapsed_ms'],
             'cost_usd': sum(costs) if all(c is not None for c in costs) else None}
 
@@ -274,36 +277,52 @@ def summary(rows):
             for mode, items in groups.items()}
 
 
+def make_provider(name, config):
+    if name == 'mock':
+        return MockProvider()
+    if name == 'openai':
+        return OpenAIProvider(config)
+    if config.get('transport', 'app-server') == 'exec':
+        return CodexProvider(config)
+    from codex_server import CodexServerProvider
+    return CodexServerProvider(config)
+
+
 async def main(args):
     cases = [json.loads(line) for line in Path(args.cases).read_text().splitlines() if line.strip()]
     config_path = args.config or str(Path(__file__).with_name('config.codex.json' if args.provider == 'codex' else 'config.example.json'))
     config = json.loads(Path(config_path).read_text())
-    provider = {'mock': MockProvider, 'openai': OpenAIProvider, 'codex': CodexProvider}[args.provider](config) if args.provider != 'mock' else MockProvider()
-    if args.command == 'demo':
-        case = next(c for c in cases if c['id'] == args.case)
-        result = await run(provider, args.mode, case, lambda e: print(json.dumps(e, ensure_ascii=False), flush=True))
-        return int(result['status'] in ('failed', 'verification_failed'))
-    if args.repeats < 1:
-        raise ValueError('repeats must be positive')
-    jobs = [(repeat, case, mode) for repeat in range(args.repeats) for case in cases for mode in MODES]
-    random.Random(args.seed).shuffle(jobs)
-    folder = Path(args.output) / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S') + '-' + os.urandom(3).hex())
-    folder.mkdir(parents=True)
-    (folder / 'manifest.json').write_text(json.dumps({'provider': args.provider, 'config': config,
-       'seed': args.seed, 'repeats': args.repeats, 'cases': cases, 'mock': args.provider == 'mock'}, ensure_ascii=False, indent=2))
-    rows = []
-    with (folder / 'runs.jsonl').open('w') as file:
-        for repeat, case, mode in jobs:
-            result = await run(provider, mode, case)
-            result.update(repeat=repeat, grade=grade(result, case['expected']), provider=args.provider)
-            rows.append(result)
-            file.write(json.dumps(result, ensure_ascii=False) + '\n')
-            file.flush()
-            print(f"{len(rows)}/{len(jobs)} {case['id']} {mode}: {result['status']}", flush=True)
-    report = {'provider': args.provider, 'mock': args.provider == 'mock', 'summary': summary(rows)}
-    (folder / 'summary.json').write_text(json.dumps(report, indent=2))
-    print(json.dumps({'output': str(folder.resolve()), **report}, indent=2))
-    return int(any(r['status'] in ('failed', 'verification_failed') for r in rows))
+    provider = make_provider(args.provider, config)
+    try:
+        if args.command == 'demo':
+            case = next(c for c in cases if c['id'] == args.case)
+            result = await run(provider, args.mode, case, lambda e: print(json.dumps(e, ensure_ascii=False), flush=True))
+            return int(result['status'] in ('failed', 'verification_failed'))
+        if args.repeats < 1:
+            raise ValueError('repeats must be positive')
+        jobs = [(repeat, case, mode) for repeat in range(args.repeats) for case in cases for mode in MODES]
+        random.Random(args.seed).shuffle(jobs)
+        folder = Path(args.output) / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S') + '-' + os.urandom(3).hex())
+        folder.mkdir(parents=True)
+        (folder / 'manifest.json').write_text(json.dumps({'provider': args.provider, 'config': config,
+           'seed': args.seed, 'repeats': args.repeats, 'cases': cases, 'mock': args.provider == 'mock'}, ensure_ascii=False, indent=2))
+        rows = []
+        with (folder / 'runs.jsonl').open('w') as file:
+            for repeat, case, mode in jobs:
+                result = await run(provider, mode, case)
+                result.update(repeat=repeat, grade=grade(result, case['expected']), provider=args.provider)
+                rows.append(result)
+                file.write(json.dumps(result, ensure_ascii=False) + '\n')
+                file.flush()
+                print(f"{len(rows)}/{len(jobs)} {case['id']} {mode}: {result['status']}", flush=True)
+        report = {'provider': args.provider, 'mock': args.provider == 'mock', 'summary': summary(rows)}
+        (folder / 'summary.json').write_text(json.dumps(report, indent=2))
+        print(json.dumps({'output': str(folder.resolve()), **report}, indent=2))
+        return int(any(r['status'] in ('failed', 'verification_failed') for r in rows))
+
+    finally:
+        if hasattr(provider, 'close'):
+            await asyncio.to_thread(provider.close)
 
 
 if __name__ == '__main__':

@@ -11,7 +11,7 @@ import threading
 import time
 import unicodedata
 
-from lab import CodexProvider, MockProvider, OpenAIProvider, MODES, grade, run
+from lab import MODES, grade, make_provider, run
 
 ROOT = Path(__file__).resolve().parent
 PROVIDERS = ('codex', 'mock', 'openai')
@@ -86,6 +86,7 @@ class Session:
         self.index, self.custom = 0, None
         self.provider, self.mode = args.provider, args.mode
         self.worker = None
+        self.providers = {}
         self.running = False
         self.events = []
         self.result = None
@@ -112,7 +113,10 @@ class Session:
         try:
             config_path = self.args.config or ROOT / ('config.codex.json' if self.provider == 'codex' else 'config.example.json')
             config = json.loads(Path(config_path).read_text())
-            provider = MockProvider() if self.provider == 'mock' else {'codex': CodexProvider, 'openai': OpenAIProvider}[self.provider](config)
+            cache_key = (self.provider, json.dumps(config, sort_keys=True))
+            if cache_key not in self.providers:
+                self.providers[cache_key] = make_provider(self.provider, config)
+            provider = self.providers[cache_key]
         except (ValueError, OSError, KeyError) as exc:
             self.message = str(exc)
             return
@@ -131,7 +135,7 @@ class Session:
                 return
             if kind == 'event':
                 self.events.append(item)
-                self.message = {'draft': 'Draft ready. Waiting for review.',
+                self.message = {'draft_delta': 'Receiving the first answer...', 'draft': 'Draft ready. Waiting for review.',
                                 'verified': 'Review complete. No changes needed.',
                                 'final': 'Run complete.', 'error': 'Run failed. The draft has not passed review.'}.get(item['event'], '')
             else:
@@ -231,7 +235,8 @@ class Session:
                 (self.buffer or 'Type your prompt here.') if self.editing else self.case['question'])
         draft = next((e for e in self.events if e['event'] == 'draft'), None)
         final = next((e for e in reversed(self.events) if e['event'] == 'final'), None)
-        section('DRAFT', draft['answer'] if draft else 'No draft yet.')
+        partial = ''.join(e['delta'] for e in self.events if e['event'] == 'draft_delta')
+        section('DRAFT', draft['answer'] if draft else partial or 'No draft yet.')
         verified = any(e['event'] == 'verified' for e in self.events)
         if verified:
             section('REVIEW', 'Review complete · No changes needed')
@@ -245,6 +250,8 @@ class Session:
             result = self.result
             first = result.get('first_answer_ms')
             section('METRICS', f"First answer {first / 1000:.2f}s" if first is not None else 'No first answer')
+            if result.get('first_token_ms') is not None:
+                lines.extend((line, 0) for line in wrap(f"First token {result['first_token_ms']/1000:.2f}s", columns))
             lines.extend((line, 0) for line in wrap(f"Completed {result['final_ms']/1000:.2f}s  |  Calls {len(result['calls'])}", columns))
             for call in result['calls']:
                 usage = call.get('usage') or {}
@@ -311,6 +318,9 @@ def application(screen, session):
             session.worker.cancel()
             session.worker.thread.join(timeout=2)
         session.poll()
+        for provider in session.providers.values():
+            if hasattr(provider, 'close'):
+                provider.close()
 
 
 def main():

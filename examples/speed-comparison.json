@@ -1,0 +1,1316 @@
+{
+  "config": {
+    "timeout_seconds": 120,
+    "fast": {
+      "model": "gpt-6-luna",
+      "reasoning_effort": "low",
+      "label": "gpt-6-luna-light",
+      "service_tier": "fast"
+    },
+    "strong": {
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "high",
+      "label": "gpt-6.1-sol-high",
+      "service_tier": "standard"
+    },
+    "transport": "app-server"
+  },
+  "records": [
+    {
+      "transport": "exec",
+      "case_id": "multiply",
+      "mode": "sequential",
+      "question": "17 × 19는 얼마인가? 숫자만 답하라.",
+      "draft": "323",
+      "answer": "323",
+      "status": "accepted",
+      "events": [
+        {
+          "event": "draft",
+          "elapsed_ms": 5361.550499997975,
+          "answer": "323",
+          "status": "verifying"
+        },
+        {
+          "event": "verified",
+          "elapsed_ms": 13652.307834003295,
+          "status": "accepted"
+        }
+      ],
+      "calls": [
+        {
+          "role": "fast",
+          "stage": "draft",
+          "text": "323",
+          "model": null,
+          "requested_model": "gpt-6-luna",
+          "reasoning_effort": "low",
+          "model_label": "gpt-6-luna-light",
+          "requested_service_tier": "fast",
+          "service_tier": null,
+          "usage": {
+            "input_tokens": 19894,
+            "output_tokens": 5,
+            "input_tokens_details": {
+              "cached_tokens": 19200
+            }
+          },
+          "codex_usage": {
+            "input_tokens": 19894,
+            "cached_input_tokens": 19200,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 5,
+            "reasoning_output_tokens": 0
+          },
+          "cost_usd": null,
+          "auth": "chatgpt",
+          "duration_ms": 5361.479833998601
+        },
+        {
+          "role": "strong",
+          "stage": "review",
+          "text": "{\"status\":\"accepted\",\"answer\":\"323\",\"reason\":\"17 × 19 = 323이므로 초안이 정확하다.\"}",
+          "model": null,
+          "requested_model": "gpt-6.1-sol",
+          "reasoning_effort": "high",
+          "model_label": "gpt-6.1-sol-high",
+          "requested_service_tier": "standard",
+          "service_tier": null,
+          "usage": {
+            "input_tokens": 16113,
+            "output_tokens": 70,
+            "input_tokens_details": {
+              "cached_tokens": 14720
+            }
+          },
+          "codex_usage": {
+            "input_tokens": 16113,
+            "cached_input_tokens": 14720,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 70,
+            "reasoning_output_tokens": 31
+          },
+          "cost_usd": null,
+          "auth": "chatgpt",
+          "duration_ms": 8290.616082995257
+        }
+      ],
+      "first_answer_ms": 5361.550499997975,
+      "first_token_ms": null,
+      "final_ms": 13652.307834003295,
+      "cost_usd": null
+    },
+    {
+      "transport": "app-server",
+      "case_id": "multiply",
+      "mode": "sequential",
+      "question": "17 × 19는 얼마인가? 숫자만 답하라.",
+      "draft": "323",
+      "answer": "323",
+      "status": "accepted",
+      "events": [
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 5139.109915995505,
+          "delta": "323",
+          "status": "generating"
+        },
+        {
+          "event": "draft",
+          "elapsed_ms": 5215.052166000532,
+          "answer": "323",
+          "status": "verifying"
+        },
+        {
+          "event": "verified",
+          "elapsed_ms": 12955.058624997037,
+          "status": "accepted"
+        }
+      ],
+      "calls": [
+        {
+          "role": "fast",
+          "stage": "draft",
+          "text": "323",
+          "model": null,
+          "requested_model": "gpt-6-luna",
+          "session_model": "gpt-6-luna",
+          "model_label": "gpt-6-luna-light",
+          "reasoning_effort": "low",
+          "requested_service_tier": "fast",
+          "service_tier": null,
+          "session_service_tier": "priority",
+          "usage": {
+            "input_tokens": 7844,
+            "output_tokens": 5,
+            "input_tokens_details": {
+              "cached_tokens": 4864
+            }
+          },
+          "codex_usage": {
+            "totalTokens": 7849,
+            "inputTokens": 7844,
+            "cachedInputTokens": 4864,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 5,
+            "reasoningOutputTokens": 0
+          },
+          "cost_usd": null,
+          "auth": "chatgpt",
+          "transport": "app-server",
+          "server_start_ms": 463.36429200164275,
+          "thread_start_ms": 787.5967919972027,
+          "first_token_ms": 5138.640500001202,
+          "server_turn_ms": 3958,
+          "duration_ms": 5214.530334000301
+        },
+        {
+          "role": "strong",
+          "stage": "review",
+          "text": "{\"status\":\"accepted\",\"answer\":\"323\",\"reason\":\"17 × 19 = 323.\"}",
+          "model": null,
+          "requested_model": "gpt-6.1-sol",
+          "session_model": "gpt-6.1-sol",
+          "model_label": "gpt-6.1-sol-high",
+          "reasoning_effort": "high",
+          "requested_service_tier": "standard",
+          "service_tier": null,
+          "session_service_tier": "default",
+          "usage": {
+            "input_tokens": 7961,
+            "output_tokens": 64,
+            "input_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "codex_usage": {
+            "totalTokens": 8025,
+            "inputTokens": 7961,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 64,
+            "reasoningOutputTokens": 32
+          },
+          "cost_usd": null,
+          "auth": "chatgpt",
+          "transport": "app-server",
+          "server_start_ms": 0.0,
+          "thread_start_ms": 3.380750000360422,
+          "first_token_ms": 7061.727124993922,
+          "server_turn_ms": 7733,
+          "duration_ms": 7739.416624994192
+        }
+      ],
+      "first_answer_ms": 5215.052166000532,
+      "first_token_ms": 5139.109915995505,
+      "final_ms": 12955.058624997037,
+      "cost_usd": null
+    },
+    {
+      "transport": "app-server",
+      "case_id": "explain",
+      "mode": "sequential",
+      "question": "Explain why dividing by zero is undefined. Write exactly eight short sentences in English.",
+      "draft": "Division asks how many times one number fits into another. For example, \\(6 \\div 2 = 3\\) because \\(2 \\times 3 = 6\\). So \\(6 \\div 0\\) would need a number that, multiplied by zero, equals six. But zero times any number is zero, never six. Thus no quotient works when the dividend is nonzero. For \\(0 \\div 0\\), every number multiplied by zero gives zero. That means there is no unique quotient for \\(0 \\div 0\\). Therefore, division by zero is undefined.",
+      "answer": "Division asks how many times one number fits into another. For example, \\(6 \\div 2 = 3\\) because \\(2 \\times 3 = 6\\). So \\(6 \\div 0\\) would need a number that, multiplied by zero, equals six. But zero times any number is zero, never six. Thus no quotient works when the dividend is nonzero. For \\(0 \\div 0\\), every number multiplied by zero gives zero. That means there is no unique quotient for \\(0 \\div 0\\). Therefore, division by zero is undefined.",
+      "status": "accepted",
+      "events": [
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 2989.7665829994367,
+          "delta": "Division",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 2989.7763330009184,
+          "delta": " asks",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 2989.7772920012358,
+          "delta": " how",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 2989.777958006016,
+          "delta": " many",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 2989.7785000066506,
+          "delta": " times",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 2989.7790830000304,
+          "delta": " one",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 2989.779625000665,
+          "delta": " number",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3009.4285830055014,
+          "delta": " fits",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3009.462792004342,
+          "delta": " into",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3130.445958006021,
+          "delta": " another",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3131.0936250010855,
+          "delta": ".",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3140.6425000022864,
+          "delta": " For",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3140.6447920016944,
+          "delta": " example",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3140.7580000013695,
+          "delta": ",",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3140.7596670032945,
+          "delta": " \\(",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3140.7605830027023,
+          "delta": "6",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3140.761292001116,
+          "delta": " \\",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3140.7973330060486,
+          "delta": "div",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3143.962667003507,
+          "delta": " ",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3145.719874999486,
+          "delta": "2",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3149.2007920023752,
+          "delta": " =",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3163.448042003438,
+          "delta": " ",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3164.7606670012465,
+          "delta": "3",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3183.0580420064507,
+          "delta": "\\",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3209.2799580059364,
+          "delta": ")",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3209.282957999676,
+          "delta": " because",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3246.22179200378,
+          "delta": " \\(",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3248.182375005854,
+          "delta": "2",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3257.7238750018296,
+          "delta": " \\",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3275.081792002311,
+          "delta": "times",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3277.4074580011074,
+          "delta": " ",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3288.203916999919,
+          "delta": "3",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3349.9331250059186,
+          "delta": " =",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3349.937000006321,
+          "delta": " ",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3384.3058750062482,
+          "delta": "6",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3403.4264580041054,
+          "delta": "\\",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3403.4348750064964,
+          "delta": ").",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3403.436500004318,
+          "delta": " So",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3419.716000003973,
+          "delta": " \\(",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3423.273375003191,
+          "delta": "6",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3429.164833003597,
+          "delta": " \\",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3435.487083006592,
+          "delta": "div",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3435.491958000057,
+          "delta": " ",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3445.9005419994355,
+          "delta": "0",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3446.1930000034044,
+          "delta": "\\",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3490.3782500041416,
+          "delta": ")",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3501.6348749995814,
+          "delta": " would",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3503.098000001046,
+          "delta": " need",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3504.706208004791,
+          "delta": " a",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3517.4541250016773,
+          "delta": " number",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3517.456542002037,
+          "delta": " that",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3520.720375003293,
+          "delta": ",",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3554.772082999989,
+          "delta": " multiplied",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3554.965125003946,
+          "delta": " by",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3696.24583300174,
+          "delta": " zero",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3703.162917001464,
+          "delta": ",",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3704.881750003551,
+          "delta": " equals",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3704.886167004588,
+          "delta": " six",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3707.2733330060146,
+          "delta": ".",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3707.486917002825,
+          "delta": " But",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3707.5335000045015,
+          "delta": " zero",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3709.2290420041536,
+          "delta": " times",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3709.2303750032443,
+          "delta": " any",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3709.2310420048307,
+          "delta": " number",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3709.2316670023138,
+          "delta": " is",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3721.401250004419,
+          "delta": " zero",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3721.4699579999433,
+          "delta": ",",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3721.6636250013835,
+          "delta": " never",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3732.307958001911,
+          "delta": " six",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3744.6853750006994,
+          "delta": ".",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3753.0280420032796,
+          "delta": " Thus",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3760.2147500001593,
+          "delta": " no",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3777.3328330004006,
+          "delta": " quotient",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3798.36541700206,
+          "delta": " works",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3798.368625000876,
+          "delta": " when",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3817.408250004519,
+          "delta": " the",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3874.5653750011115,
+          "delta": " dividend",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3874.692583005526,
+          "delta": " is",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3874.693917001423,
+          "delta": " non",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3874.694666999858,
+          "delta": "zero",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3874.69545800559,
+          "delta": ".",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3888.049625005806,
+          "delta": " For",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3888.051958005235,
+          "delta": " \\(",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3915.382500003034,
+          "delta": "0",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3918.9113329994143,
+          "delta": " \\",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3931.609750005009,
+          "delta": "div",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3947.592958000314,
+          "delta": " ",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3952.6763329995447,
+          "delta": "0",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3968.65437499946,
+          "delta": "\\",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3986.8841670031543,
+          "delta": "),",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 3992.1851250037435,
+          "delta": " every",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4002.2130830038805,
+          "delta": " number",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4031.9045830037794,
+          "delta": " multiplied",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4032.0219170025666,
+          "delta": " by",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4035.103917005472,
+          "delta": " zero",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4050.845792000473,
+          "delta": " gives",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4057.1985420028795,
+          "delta": " zero",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4074.9808750042575,
+          "delta": ".",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4207.257875001233,
+          "delta": " That",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4207.261250005104,
+          "delta": " means",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4213.188542002172,
+          "delta": " there",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4222.320250002667,
+          "delta": " is",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4222.322542002075,
+          "delta": " no",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4234.8962079995545,
+          "delta": " unique",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4238.669583006413,
+          "delta": " quotient",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4276.340625001467,
+          "delta": " for",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4276.342708006268,
+          "delta": " \\(",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4283.934458006115,
+          "delta": "0",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4286.590583003999,
+          "delta": " \\",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4286.599458006094,
+          "delta": "div",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4286.60050000326,
+          "delta": " ",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4291.120000001683,
+          "delta": "0",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4291.329750005389,
+          "delta": "\\",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4291.455042002781,
+          "delta": ").",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4294.326750001346,
+          "delta": " Therefore",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4301.8577080001705,
+          "delta": ",",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4302.074667000852,
+          "delta": " division",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4329.090333005297,
+          "delta": " by",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4394.528458004061,
+          "delta": " zero",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4394.530958001269,
+          "delta": " is",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4401.055792004627,
+          "delta": " undefined",
+          "status": "generating"
+        },
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 4401.059667005029,
+          "delta": ".",
+          "status": "generating"
+        },
+        {
+          "event": "draft",
+          "elapsed_ms": 4523.190667001472,
+          "answer": "Division asks how many times one number fits into another. For example, \\(6 \\div 2 = 3\\) because \\(2 \\times 3 = 6\\). So \\(6 \\div 0\\) would need a number that, multiplied by zero, equals six. But zero times any number is zero, never six. Thus no quotient works when the dividend is nonzero. For \\(0 \\div 0\\), every number multiplied by zero gives zero. That means there is no unique quotient for \\(0 \\div 0\\). Therefore, division by zero is undefined.",
+          "status": "verifying"
+        },
+        {
+          "event": "verified",
+          "elapsed_ms": 17999.96062500577,
+          "status": "accepted"
+        }
+      ],
+      "calls": [
+        {
+          "role": "fast",
+          "stage": "draft",
+          "text": "Division asks how many times one number fits into another. For example, \\(6 \\div 2 = 3\\) because \\(2 \\times 3 = 6\\). So \\(6 \\div 0\\) would need a number that, multiplied by zero, equals six. But zero times any number is zero, never six. Thus no quotient works when the dividend is nonzero. For \\(0 \\div 0\\), every number multiplied by zero gives zero. That means there is no unique quotient for \\(0 \\div 0\\). Therefore, division by zero is undefined.",
+          "model": null,
+          "requested_model": "gpt-6-luna",
+          "session_model": "gpt-6-luna",
+          "model_label": "gpt-6-luna-light",
+          "reasoning_effort": "low",
+          "requested_service_tier": "fast",
+          "service_tier": null,
+          "session_service_tier": "priority",
+          "usage": {
+            "input_tokens": 7778,
+            "output_tokens": 126,
+            "input_tokens_details": {
+              "cached_tokens": 1792
+            }
+          },
+          "codex_usage": {
+            "totalTokens": 7904,
+            "inputTokens": 7778,
+            "cachedInputTokens": 1792,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 126,
+            "reasoningOutputTokens": 0
+          },
+          "cost_usd": null,
+          "auth": "chatgpt",
+          "transport": "app-server",
+          "server_start_ms": 0.0,
+          "thread_start_ms": 7.835040996724274,
+          "first_token_ms": 2989.3746660018223,
+          "server_turn_ms": 4507,
+          "duration_ms": 4522.272416004853
+        },
+        {
+          "role": "strong",
+          "stage": "review",
+          "text": "{\"status\":\"accepted\",\"answer\":\"Division asks how many times one number fits into another. For example, \\\\(6 \\\\div 2 = 3\\\\) because \\\\(2 \\\\times 3 = 6\\\\). So \\\\(6 \\\\div 0\\\\) would need a number that, multiplied by zero, equals six. But zero times any number is zero, never six. Thus no quotient works when the dividend is nonzero. For \\\\(0 \\\\div 0\\\\), every number multiplied by zero gives zero. That means there is no unique quotient for \\\\(0 \\\\div 0\\\\). Therefore, division by zero is undefined.\",\"reason\":\"The draft correctly explains both cases and contains exactly eight short English sentences.\"}",
+          "model": null,
+          "requested_model": "gpt-6.1-sol",
+          "session_model": "gpt-6.1-sol",
+          "model_label": "gpt-6.1-sol-high",
+          "reasoning_effort": "high",
+          "requested_service_tier": "standard",
+          "service_tier": null,
+          "session_service_tier": "default",
+          "usage": {
+            "input_tokens": 12881,
+            "output_tokens": 235,
+            "input_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "codex_usage": {
+            "totalTokens": 13116,
+            "inputTokens": 12881,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 235,
+            "reasoningOutputTokens": 72
+          },
+          "cost_usd": null,
+          "auth": "chatgpt",
+          "transport": "app-server",
+          "server_start_ms": 0.0,
+          "thread_start_ms": 106.55204200156732,
+          "first_token_ms": 10140.779000001203,
+          "server_turn_ms": 13322,
+          "duration_ms": 13471.856458003458
+        }
+      ],
+      "first_answer_ms": 4523.190667001472,
+      "first_token_ms": 2989.7665829994367,
+      "final_ms": 17999.96062500577,
+      "cost_usd": null
+    },
+    {
+      "transport": "exec",
+      "case_id": "explain",
+      "mode": "sequential",
+      "question": "Explain why dividing by zero is undefined. Write exactly eight short sentences in English.",
+      "draft": "Division asks how many times the divisor fits into the number. For example, 6 divided by 2 equals 3. This means 2 times 3 equals 6. If 6 divided by 0 equaled a number, multiplying that number by 0 would have to give 6. Multiplying any number by 0 gives 0. So no number can satisfy that equation. For 0 divided by 0, every number would satisfy the equation. A result that has no value or has many possible values is undefined.",
+      "answer": "Division asks how many times the divisor fits into the number. For example, 6 divided by 2 equals 3. This means 2 times 3 equals 6. If 6 divided by 0 equaled a number, multiplying that number by 0 would have to give 6. Multiplying any number by 0 gives 0. So no number can satisfy that equation. For 0 divided by 0, every number would satisfy the equation. A result that has no value or has many possible values is undefined.",
+      "status": "accepted",
+      "events": [
+        {
+          "event": "draft",
+          "elapsed_ms": 7465.849082997011,
+          "answer": "Division asks how many times the divisor fits into the number. For example, 6 divided by 2 equals 3. This means 2 times 3 equals 6. If 6 divided by 0 equaled a number, multiplying that number by 0 would have to give 6. Multiplying any number by 0 gives 0. So no number can satisfy that equation. For 0 divided by 0, every number would satisfy the equation. A result that has no value or has many possible values is undefined.",
+          "status": "verifying"
+        },
+        {
+          "event": "verified",
+          "elapsed_ms": 23375.564750000194,
+          "status": "accepted"
+        }
+      ],
+      "calls": [
+        {
+          "role": "fast",
+          "stage": "draft",
+          "text": "Division asks how many times the divisor fits into the number. For example, 6 divided by 2 equals 3. This means 2 times 3 equals 6. If 6 divided by 0 equaled a number, multiplying that number by 0 would have to give 6. Multiplying any number by 0 gives 0. So no number can satisfy that equation. For 0 divided by 0, every number would satisfy the equation. A result that has no value or has many possible values is undefined.",
+          "model": null,
+          "requested_model": "gpt-6-luna",
+          "reasoning_effort": "low",
+          "model_label": "gpt-6-luna-light",
+          "requested_service_tier": "fast",
+          "service_tier": null,
+          "usage": {
+            "input_tokens": 19893,
+            "output_tokens": 113,
+            "input_tokens_details": {
+              "cached_tokens": 19200
+            }
+          },
+          "codex_usage": {
+            "input_tokens": 19893,
+            "cached_input_tokens": 19200,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 113,
+            "reasoning_output_tokens": 0
+          },
+          "cost_usd": null,
+          "auth": "chatgpt",
+          "duration_ms": 7465.640249996795
+        },
+        {
+          "role": "strong",
+          "stage": "review",
+          "text": "{\"status\":\"accepted\",\"answer\":\"Division asks how many times the divisor fits into the number. For example, 6 divided by 2 equals 3. This means 2 times 3 equals 6. If 6 divided by 0 equaled a number, multiplying that number by 0 would have to give 6. Multiplying any number by 0 gives 0. So no number can satisfy that equation. For 0 divided by 0, every number would satisfy the equation. A result that has no value or has many possible values is undefined.\",\"reason\":\"The draft contains exactly eight short English sentences and correctly explains why division by zero cannot yield a unique number.\"}",
+          "model": null,
+          "requested_model": "gpt-6.1-sol",
+          "reasoning_effort": "high",
+          "model_label": "gpt-6.1-sol-high",
+          "requested_service_tier": "standard",
+          "service_tier": null,
+          "usage": {
+            "input_tokens": 16225,
+            "output_tokens": 259,
+            "input_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "codex_usage": {
+            "input_tokens": 16225,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 259,
+            "reasoning_output_tokens": 107
+          },
+          "cost_usd": null,
+          "auth": "chatgpt",
+          "duration_ms": 15909.589916002005
+        }
+      ],
+      "first_answer_ms": 7465.849082997011,
+      "first_token_ms": null,
+      "final_ms": 23375.564750000194,
+      "cost_usd": null
+    },
+    {
+      "transport": "exec",
+      "case_id": "multiply-repeat",
+      "mode": "sequential",
+      "question": "17 × 19는 얼마인가? 숫자만 답하라.",
+      "draft": "323",
+      "answer": "323",
+      "status": "accepted",
+      "events": [
+        {
+          "event": "draft",
+          "elapsed_ms": 4782.899167003052,
+          "answer": "323",
+          "status": "verifying"
+        },
+        {
+          "event": "verified",
+          "elapsed_ms": 13997.62512500456,
+          "status": "accepted"
+        }
+      ],
+      "calls": [
+        {
+          "role": "fast",
+          "stage": "draft",
+          "text": "323",
+          "model": null,
+          "requested_model": "gpt-6-luna",
+          "reasoning_effort": "low",
+          "model_label": "gpt-6-luna-light",
+          "requested_service_tier": "fast",
+          "service_tier": null,
+          "usage": {
+            "input_tokens": 15306,
+            "output_tokens": 5,
+            "input_tokens_details": {
+              "cached_tokens": 11008
+            }
+          },
+          "codex_usage": {
+            "input_tokens": 15306,
+            "cached_input_tokens": 11008,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 5,
+            "reasoning_output_tokens": 0
+          },
+          "cost_usd": null,
+          "auth": "chatgpt",
+          "duration_ms": 4782.846916998096
+        },
+        {
+          "role": "strong",
+          "stage": "review",
+          "text": "{\"status\":\"accepted\",\"answer\":\"323\",\"reason\":\"17 × 19 = 340 − 17 = 323.\"}",
+          "model": null,
+          "requested_model": "gpt-6.1-sol",
+          "reasoning_effort": "high",
+          "model_label": "gpt-6.1-sol-high",
+          "requested_service_tier": "standard",
+          "service_tier": null,
+          "usage": {
+            "input_tokens": 16115,
+            "output_tokens": 88,
+            "input_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "codex_usage": {
+            "input_tokens": 16115,
+            "cached_input_tokens": 0,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 88,
+            "reasoning_output_tokens": 50
+          },
+          "cost_usd": null,
+          "auth": "chatgpt",
+          "duration_ms": 9214.465750003
+        }
+      ],
+      "first_answer_ms": 4782.899167003052,
+      "first_token_ms": null,
+      "final_ms": 13997.62512500456,
+      "cost_usd": null
+    },
+    {
+      "transport": "app-server",
+      "case_id": "multiply-repeat",
+      "mode": "sequential",
+      "question": "17 × 19는 얼마인가? 숫자만 답하라.",
+      "draft": "323",
+      "answer": "323",
+      "status": "accepted",
+      "events": [
+        {
+          "event": "draft_delta",
+          "elapsed_ms": 2561.903917005111,
+          "delta": "323",
+          "status": "generating"
+        },
+        {
+          "event": "draft",
+          "elapsed_ms": 2797.0644590022857,
+          "answer": "323",
+          "status": "verifying"
+        },
+        {
+          "event": "verified",
+          "elapsed_ms": 11865.109792001022,
+          "status": "accepted"
+        }
+      ],
+      "calls": [
+        {
+          "role": "fast",
+          "stage": "draft",
+          "text": "323",
+          "model": null,
+          "requested_model": "gpt-6-luna",
+          "session_model": "gpt-6-luna",
+          "model_label": "gpt-6-luna-light",
+          "reasoning_effort": "low",
+          "requested_service_tier": "fast",
+          "service_tier": null,
+          "session_service_tier": "priority",
+          "usage": {
+            "input_tokens": 12638,
+            "output_tokens": 5,
+            "input_tokens_details": {
+              "cached_tokens": 4864
+            }
+          },
+          "codex_usage": {
+            "totalTokens": 12643,
+            "inputTokens": 12638,
+            "cachedInputTokens": 4864,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 5,
+            "reasoningOutputTokens": 0
+          },
+          "cost_usd": null,
+          "auth": "chatgpt",
+          "transport": "app-server",
+          "server_start_ms": 0.0,
+          "thread_start_ms": 28.28679200320039,
+          "first_token_ms": 2561.1565410072217,
+          "server_turn_ms": 2759,
+          "duration_ms": 2796.1213330054306
+        },
+        {
+          "role": "strong",
+          "stage": "review",
+          "text": "{\"status\":\"accepted\",\"answer\":\"323\",\"reason\":\"17 × 19 = 323이므로 초안이 정확합니다.\"}",
+          "model": null,
+          "requested_model": "gpt-6.1-sol",
+          "session_model": "gpt-6.1-sol",
+          "model_label": "gpt-6.1-sol-high",
+          "reasoning_effort": "high",
+          "requested_service_tier": "standard",
+          "service_tier": null,
+          "session_service_tier": "default",
+          "usage": {
+            "input_tokens": 12755,
+            "output_tokens": 79,
+            "input_tokens_details": {
+              "cached_tokens": 0
+            }
+          },
+          "codex_usage": {
+            "totalTokens": 12834,
+            "inputTokens": 12755,
+            "cachedInputTokens": 0,
+            "cacheWriteInputTokens": 0,
+            "outputTokens": 79,
+            "reasoningOutputTokens": 40
+          },
+          "cost_usd": null,
+          "auth": "chatgpt",
+          "transport": "app-server",
+          "server_start_ms": 0.0,
+          "thread_start_ms": 10.539333998167422,
+          "first_token_ms": 8077.169124997454,
+          "server_turn_ms": 9049,
+          "duration_ms": 9067.578457994387
+        }
+      ],
+      "first_answer_ms": 2797.0644590022857,
+      "first_token_ms": 2561.903917005111,
+      "final_ms": 11865.109792001022,
+      "cost_usd": null
+    }
+  ]
+}

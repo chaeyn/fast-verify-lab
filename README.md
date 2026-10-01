@@ -1,6 +1,6 @@
 # Fast Verify Lab
 
-빠른 모델의 초안을 먼저 보여 주고 추론 모델이 검토하는 구조를 실험한다. Python 3.10 이상과 표준 라이브러리로 실행한다.
+빠른 모델의 초안을 먼저 보여 주고 추론 모델이 검토하는 구조를 실험한다. Python 3.11 이상과 표준 라이브러리로 실행한다.
 
 ## 터미널 UI
 
@@ -30,7 +30,7 @@ python3 tui.py --provider mock
 
 직접 입력한 질문은 codex 또는 openai로 실행한다. mock은 고정 사례만 지원한다. 실행 중에는 선택 값을 고정하고 스크롤과 취소·종료만 허용한다. 결과는 `results/ui-<UTC 시간>.json`에 저장하며 질문과 답변도 포함한다. 직접 입력한 질문은 정답 채점을 하지 않는다. 취소 결과에서는 보존한 초안을 검토 완료 답변으로 취급하지 않는다.
 
-40열 × 12행 이상의 대화형 터미널과 Python의 curses 지원이 필요하다. macOS·Linux에서 실행한다. 창 크기에 맞춰 한글을 줄바꿈한다. OpenAI HTTP 경로는 취소 후에도 호출별 타임아웃까지 요청이 남을 수 있으며, Codex 경로는 취소 시 CLI 프로세스를 종료한다.
+40열 × 12행 이상의 대화형 터미널과 Python의 curses 지원이 필요하다. macOS·Linux에서 실행한다. 창 크기에 맞춰 한글을 줄바꿈한다. OpenAI HTTP 경로는 취소 후에도 호출별 타임아웃까지 요청이 남을 수 있으며, Codex App Server 경로는 현재 turn을 interrupt하고 서버 연결을 유지한다. exec 경로는 CLI 프로세스를 종료한다.
 
 ## 바로 실행
 
@@ -42,7 +42,7 @@ python3 -m unittest discover -s tests -v
 
 기본 실행은 **mock**이다. 의도적으로 틀린 답과 잘못된 수정 사례를 넣은 고정 응답으로 실행 흐름을 확인한다. mock 정확도·시간은 실제 모델 성능을 나타내지 않는다.
 
-`demo`는 초안 이벤트를 먼저 출력한다. 검토 모델이 초안을 유지하면 answer 없는 verified 이벤트를 출력하고, 수정하거나 확인을 끝내지 못하면 final 이벤트를 출력한다. fast 단독 모드는 초안만 출력한다. 토큰 스트리밍은 구현하지 않았다. `first_answer_ms`는 완성된 초안을 사용자에게 내보낸 시점이며 첫 토큰 시간과 다르다.
+Codex App Server 경로는 생성 중인 첫 답변을 draft_delta 이벤트로 출력하고, 생성 완료 시 draft 이벤트를 출력한다. `demo`는 초안 이벤트를 먼저 출력한다. 검토 모델이 초안을 유지하면 answer 없는 verified 이벤트를 출력하고, 수정하거나 확인을 끝내지 못하면 final 이벤트를 출력한다. fast 단독 모드는 초안만 출력한다. App Server 경로는 첫 답변을 스트리밍한다. exec와 OpenAI HTTP 경로는 완성된 답변을 표시한다. `first_answer_ms`는 완성된 초안을 표시한 시점이다. `first_token_ms`는 스트리밍에서 첫 응답 조각을 표시한 시점이다. 두 값은 구분해서 기록한다.
 
 ## 비교하는 네 가지 방식
 
@@ -68,13 +68,15 @@ python3 lab.py bench --provider codex --repeats 1
 
 이미 ChatGPT로 로그인한 Codex CLI가 있으면 API 키 없이 실행한다. `config.codex.json`은 빠른 역할에 `gpt-6-luna` / low / fast, 검토 역할에 `gpt-6.1-sol` / high / standard를 지정한다. `gpt-6-luna-light`와 `gpt-6.1-sol-high`는 표시용 이름이며, 모델 ID와 추론 수준을 따로 전달한다. fast는 priority, standard는 default로 요청한다. 계정에서 사용할 수 있는 모델로 설정을 바꿀 수 있다. 다른 설정은 `--config <파일>`로 지정한다.
 
-프로그램은 공식 `codex exec --json`을 호출하고 저장된 로그인을 재사용한다. OAuth 토큰을 직접 읽거나 복사하지 않는다. `forced_login_method=chatgpt`를 지정하고 API 키 환경 변수를 자식 프로세스에서 제거한다. 로그인 상태가 맞지 않으면 실패한다. 사용량은 ChatGPT/Codex 구독 한도에 반영되며 API 데이터 공유 무료 토큰과 별개다.
+기본 경로는 공식 `codex app-server`의 private stdio 연결이다. TUI가 열려 있는 동안 프로세스를 유지하고, CLI bench에서도 여러 실행에 같은 프로세스를 사용한다. 매 호출은 새로운 ephemeral thread에서 실행하므로 이전 질문·답변을 다음 모델 입력에 섞지 않는다. 예전 `codex exec --json` 방식은 설정의 `transport`를 `exec`로 바꾸면 사용할 수 있다. OAuth 토큰을 직접 읽거나 복사하지 않는다. `forced_login_method=chatgpt`를 지정하고 API 키 환경 변수를 자식 프로세스에서 제거한다. 로그인 상태가 맞지 않으면 실패한다. 사용량은 ChatGPT/Codex 구독 한도에 반영되며 API 데이터 공유 무료 토큰과 별개다.
 
-각 호출은 빈 임시 작업 폴더, read-only sandbox, ephemeral 세션, 사용자 설정 미적용으로 실행한다. 프로젝트 문서를 읽는 크기를 0으로 지정한다. 정답과 mock 응답을 프롬프트에 넣지 않는다. 도구를 사용하지 않도록 지시하고, 기록에서 명령 실행·파일 변경·MCP·검색 호출을 발견하면 비교에서 실패로 처리한다. 이 검사는 실행 후 확인이므로 도구 자체를 완전히 차단하는 기능은 아니다.
+App Server는 별도의 임시 설정 디렉터리에서 실행한다. 파일 기반 Codex 로그인 정보를 symlink로 연결하며 프로그램은 토큰 내용을 읽거나 복사하지 않는다. keyring 전용 로그인은 exec 경로를 사용한다. 사용자 MCP·플러그인·스킬 설정을 가져오지 않아 입력에 포함되는 도구·지침을 줄인다. 임시 설정과 작업 폴더는 종료 시 삭제한다. 프로젝트 문서도 불러오지 않는다. shell과 웹 검색을 비활성화하고 read-only sandbox를 지정한다. 정답과 mock 응답은 프롬프트에 넣지 않는다. 도구 실행을 발견하면 실패 처리한다.
 
-검토 출력에는 JSON Schema를 적용한다. CLI가 출력한 입력·캐시 입력·출력 토큰을 저장한다. CLI 이벤트에 실제 반환 모델 ID나 서비스 티어가 없으면 이를 추측하지 않는다. `requested_model`은 요청한 모델이며 `model`은 null이다. `requested_service_tier`는 설정한 속도 등급이다. CLI가 실제 반환 티어를 제공하지 않으면 `service_tier`는 null로 기록한다. 구독 사용량을 USD로 환산하지 않으므로 비용도 null이다. CLI 시작과 로그인 처리 시간을 응답 시간에 포함한다. API의 `max_output_tokens` 설정은 Codex 실행 경로에 적용하지 않는다.
+검토 출력에는 JSON Schema를 적용한다. 입력·캐시 입력·출력 토큰과 server_start_ms·thread_start_ms·first_token_ms·server_turn_ms를 기록한다. `session_model`과 `session_service_tier`는 App Server가 확인한 세션 설정이다. API가 실제 처리한 모델·티어와 동일하다고 단정하지 않는다. 실제 반환 값을 제공하지 않으면 model과 service_tier는 null로 기록한다. 요청 설정은 requested_model과 requested_service_tier에 남는다. 구독 사용량을 USD로 환산하지 않아 비용은 null이다. API의 max_output_tokens는 Codex 경로에 적용하지 않는다.
 
-공식 문서: [Codex 인증](https://learn.chatgpt.com/docs/auth), [비대화형 실행](https://learn.chatgpt.com/docs/noninteractive).
+TUI에서 x를 누르면 실행 중인 turn에 interrupt를 보내고, q로 종료하면 App Server도 종료한다. 연결이 끊긴 실행은 실패로 처리하며 승인 결과로 바꾸지 않는다. App Server stdio 프로토콜은 설치된 Codex 버전에 맞춰 사용한다.
+
+공식 문서: [Codex 인증](https://learn.chatgpt.com/docs/auth), [비대화형 실행](https://learn.chatgpt.com/docs/noninteractive), [App Server](https://learn.chatgpt.com/docs/app-server).
 
 ## 실제 API 실행
 
@@ -110,6 +112,8 @@ OpenAI Responses API를 사용한다. API 키는 파일이나 결과에 기록�
 `regression` 사례는 정답 초안을 검토 모델이 틀리게 바꾸는 상황을 mock으로 재현한다. 정확도와 함께 이 지표를 봐야 검토의 부작용을 확인할 수 있다. 실패 시 보존한 초안이 정답일 수 있으므로 정확도와 실패 수도 함께 봐야 한다.
 
 ## 실제 실행 기록
+
+[App Server 지연 시간 비교](examples/speed-report.md)에 같은 모델 설정으로 실행한 exec와 App Server 비교 결과를 기록했다.
 
 [Codex OAuth 초기 실험](examples/codex-report.md)에 24건 비교 결과와 별도 오답 수정 시험을 기록했다. 수학적 정답과 출력 형식 일치를 구분해 해석한다.
 

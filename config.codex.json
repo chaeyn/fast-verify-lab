@@ -11,5 +11,6 @@
     "reasoning_effort": "high",
     "label": "gpt-6.1-sol-high",
     "service_tier": "standard"
-  }
+  },
+  "transport": "app-server"
 }
