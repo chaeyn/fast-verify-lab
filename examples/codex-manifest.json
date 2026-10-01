@@ -1,0 +1,61 @@
+{
+  "provider": "codex",
+  "config": {
+    "timeout_seconds": 120,
+    "fast": {
+      "model": "gpt-6-luna",
+      "reasoning_effort": "low"
+    },
+    "strong": {
+      "model": "gpt-6-astra",
+      "reasoning_effort": "high"
+    }
+  },
+  "seed": 42,
+  "repeats": 1,
+  "cases": [
+    {
+      "id": "multiply",
+      "question": "17 × 19는 얼마인가? 숫자만 답하라.",
+      "expected": "323",
+      "mock_draft": "313",
+      "mock_strong": "323"
+    },
+    {
+      "id": "discount",
+      "question": "80000원 상품을 15% 할인하면 가격은? 원 단위 숫자만 답하라.",
+      "expected": "68000",
+      "mock_draft": "68000",
+      "mock_strong": "68000"
+    },
+    {
+      "id": "probability",
+      "question": "공정한 주사위 두 개를 던져 합이 7일 확률은? 기약분수만 답하라.",
+      "expected": "1/6",
+      "mock_draft": "1/12",
+      "mock_strong": "1/6"
+    },
+    {
+      "id": "source",
+      "question": "자료: 실험 A는 12회 중 9회 성공했다. 실험 B는 20회 중 14회 성공했다. 성공률이 높은 실험의 이름만 답하라: A 또는 B.",
+      "expected": "A",
+      "mock_draft": "A",
+      "mock_strong": "A"
+    },
+    {
+      "id": "unknown",
+      "question": "자료: 김민수는 어제 도서관에 갔다. 이 자료만으로 김민수의 생년을 알 수 있는가? 알 수 없으면 unknown만 답하라.",
+      "expected": "unknown",
+      "mock_draft": "2000",
+      "mock_strong": "unknown"
+    },
+    {
+      "id": "regression",
+      "question": "2의 10제곱은? 숫자만 답하라.",
+      "expected": "1024",
+      "mock_draft": "1024",
+      "mock_strong": "2048"
+    }
+  ],
+  "mock": false
+}

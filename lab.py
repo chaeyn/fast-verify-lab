@@ -8,6 +8,8 @@ import os
 from pathlib import Path
 import random
 import statistics
+import shutil
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -89,6 +91,85 @@ class OpenAIProvider:
             raise RuntimeError(f'API HTTP {exc.code}') from None
         except (urllib.error.URLError, TimeoutError):
             raise RuntimeError('API connection failed or timed out') from None
+
+
+class CodexProvider:
+    """Invoke the official CLI with its saved ChatGPT login, without reading tokens."""
+    def __init__(self, config):
+        self.config = config
+        self.binary = shutil.which('codex')
+        if not self.binary:
+            raise ValueError('Install Codex CLI and run codex login first')
+        for role in ('fast', 'strong'):
+            if config[role]['model'].startswith('SET_'):
+                raise ValueError('Set Codex model IDs in config')
+
+    @staticmethod
+    def parse_events(stdout):
+        events = [json.loads(line) for line in stdout.splitlines() if line.strip()]
+        if any(e.get('type') in ('error', 'turn.failed') for e in events):
+            raise RuntimeError('Codex turn failed')
+        completed = [e for e in events if e.get('type') == 'turn.completed']
+        messages = [e['item']['text'] for e in events if e.get('type') == 'item.completed'
+                    and e.get('item', {}).get('type') == 'agent_message']
+        items = [e.get('item', {}).get('type') for e in events if e.get('type', '').startswith('item.')]
+        if any(t in ('command_execution', 'file_change', 'mcp_tool_call', 'web_search') for t in items):
+            raise RuntimeError('Codex used tools; pure-model experiment rejected')
+        if len(completed) != 1 or not messages or not messages[-1].strip():
+            raise RuntimeError('Codex did not complete with an answer')
+        usage = completed[0].get('usage')
+        normalized = None if usage is None else {
+            'input_tokens': usage['input_tokens'], 'output_tokens': usage['output_tokens'],
+            'input_tokens_details': {'cached_tokens': usage.get('cached_input_tokens', 0)}}
+        return messages[-1], normalized, usage
+
+    async def generate(self, role, stage, question, draft=None, independent=None, case=None):
+        spec = self.config[role]
+        instructions = REVIEW if stage == 'review' else SOLVE
+        prompt = instructions + ('\nThis is a pure question-answering experiment. Do not use tools, inspect '
+            'files, execute commands, or change anything. Answer only the supplied question.\n')
+        prompt += json.dumps({'question': question, 'draft': draft, 'independent_answer': independent}, ensure_ascii=False)
+        started = time.perf_counter()
+        # Empty working directory prevents the CLI from reading the dataset, gold answers,
+        # repository instructions, or a previous rollout. Login remains managed by Codex.
+        with tempfile.TemporaryDirectory(prefix='fast-verify-codex-') as folder:
+            command = [self.binary, 'exec', '--ignore-user-config', '--ephemeral', '--json',
+                       '--sandbox', 'read-only', '--skip-git-repo-check', '--cd', folder,
+                       '--model', spec['model'], '-c', 'project_doc_max_bytes=0',
+                       '-c', 'forced_login_method="chatgpt"']
+            if spec.get('reasoning_effort'):
+                command += ['-c', 'model_reasoning_effort=' + json.dumps(spec['reasoning_effort'])]
+            if stage == 'review':
+                schema = {'type': 'object', 'properties': {
+                    'status': {'type': 'string', 'enum': ['accepted', 'corrected', 'uncertain']},
+                    'answer': {'type': 'string'}, 'reason': {'type': 'string'}},
+                    'required': ['status', 'answer', 'reason'], 'additionalProperties': False}
+                path = Path(folder) / 'review-schema.json'
+                path.write_text(json.dumps(schema))
+                command += ['--output-schema', str(path)]
+            command += ['-']
+            env = os.environ.copy()
+            # Avoid accidentally switching this provider to API billing.
+            for key in ('OPENAI_API_KEY', 'CODEX_API_KEY', 'CODEX_ACCESS_TOKEN'):
+                env.pop(key, None)
+            process = await asyncio.create_subprocess_exec(*command, stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, env=env, cwd=folder)
+            try:
+                stdout, _stderr = await asyncio.wait_for(process.communicate(prompt.encode()),
+                                                         self.config['timeout_seconds'])
+            except (asyncio.CancelledError, TimeoutError):
+                if process.returncode is None:
+                    process.kill()
+                await process.communicate()
+                raise
+            if process.returncode != 0:
+                # stderr can include auth or local configuration details; do not log it.
+                raise RuntimeError(f'Codex exited with code {process.returncode}')
+            text, usage, raw_usage = self.parse_events(stdout.decode())
+        return {'text': text, 'model': None, 'requested_model': spec['model'],
+                'reasoning_effort': spec.get('reasoning_effort'), 'usage': usage,
+                'codex_usage': raw_usage, 'cost_usd': None, 'auth': 'chatgpt',
+                'duration_ms': (time.perf_counter() - started) * 1000}
 
 
 class MockProvider:
@@ -188,8 +269,9 @@ def summary(rows):
 
 async def main(args):
     cases = [json.loads(line) for line in Path(args.cases).read_text().splitlines() if line.strip()]
-    config = json.loads(Path(args.config).read_text())
-    provider = MockProvider() if args.provider == 'mock' else OpenAIProvider(config)
+    config_path = args.config or str(Path(__file__).with_name('config.codex.json' if args.provider == 'codex' else 'config.example.json'))
+    config = json.loads(Path(config_path).read_text())
+    provider = {'mock': MockProvider, 'openai': OpenAIProvider, 'codex': CodexProvider}[args.provider](config) if args.provider != 'mock' else MockProvider()
     if args.command == 'demo':
         case = next(c for c in cases if c['id'] == args.case)
         result = await run(provider, args.mode, case, lambda e: print(json.dumps(e, ensure_ascii=False), flush=True))
@@ -220,8 +302,8 @@ async def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('demo', 'bench'))
-    parser.add_argument('--provider', choices=('mock', 'openai'), default='mock')
-    parser.add_argument('--config', default=str(Path(__file__).with_name('config.example.json')))
+    parser.add_argument('--provider', choices=('mock', 'openai', 'codex'), default='mock')
+    parser.add_argument('--config', default=None)
     parser.add_argument('--cases', default=str(Path(__file__).parent / 'data/cases.jsonl'))
     parser.add_argument('--mode', choices=MODES, default='parallel')
     parser.add_argument('--case', default='multiply')

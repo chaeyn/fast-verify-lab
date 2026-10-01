@@ -1,0 +1,50 @@
+{
+  "provider": "codex",
+  "mock": false,
+  "summary": {
+    "parallel": {
+      "n": 6,
+      "accuracy": 1,
+      "repairs": 0,
+      "regressions": 0,
+      "failures": 0,
+      "uncertain": 0,
+      "first_answer_median_ms": 5258.2621249966905,
+      "final_median_ms": 12926.6604584991,
+      "total_cost_usd": null
+    },
+    "strong": {
+      "n": 6,
+      "accuracy": 1,
+      "repairs": 0,
+      "regressions": 0,
+      "failures": 0,
+      "uncertain": 0,
+      "first_answer_median_ms": 6419.808750000811,
+      "final_median_ms": 6419.808750000811,
+      "total_cost_usd": null
+    },
+    "sequential": {
+      "n": 6,
+      "accuracy": 1,
+      "repairs": 0,
+      "regressions": 0,
+      "failures": 0,
+      "uncertain": 0,
+      "first_answer_median_ms": 5166.855249502987,
+      "final_median_ms": 12297.994791500969,
+      "total_cost_usd": null
+    },
+    "fast": {
+      "n": 6,
+      "accuracy": 0.8333333333333334,
+      "repairs": 0,
+      "regressions": 0,
+      "failures": 0,
+      "uncertain": 0,
+      "first_answer_median_ms": 5225.690375002159,
+      "final_median_ms": 5225.694104501599,
+      "total_cost_usd": null
+    }
+  }
+}

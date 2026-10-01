@@ -27,6 +27,25 @@ python3 -m unittest discover -s tests -v
 
 순차 방식의 확정 시간은 대략 `초안 시간 + 검토 시간`, 병렬 방식은 `max(초안 시간, 독립 풀이 시간) + 검토 시간`이다. 추가 호출 때문에 병렬 방식의 최종 확정이 더 늦어질 수도 있다. 두 모델을 함께 시작해도 빠른 초안 자체의 오류 검토는 초안이 나온 후 시작한다.
 
+## ChatGPT OAuth로 실행
+
+```sh
+codex login
+codex login status
+python3 lab.py demo --provider codex
+python3 lab.py bench --provider codex --repeats 1
+```
+
+이미 ChatGPT로 로그인한 Codex CLI가 있으면 API 키 없이 실행한다. `config.codex.json`은 빠른 역할에 `gpt-6-luna` / low, 검토 역할에 `gpt-6-astra` / high를 지정한다. 계정에서 사용할 수 있는 모델로 설정을 바꿀 수 있다. 다른 설정은 `--config <파일>`로 지정한다.
+
+프로그램은 공식 `codex exec --json`을 호출하고 저장된 로그인을 재사용한다. OAuth 토큰을 직접 읽거나 복사하지 않는다. `forced_login_method=chatgpt`를 지정하고 API 키 환경 변수를 자식 프로세스에서 제거한다. 로그인 상태가 맞지 않으면 실패한다. 사용량은 ChatGPT/Codex 구독 한도에 반영되며 API 데이터 공유 무료 토큰과 별개다.
+
+각 호출은 빈 임시 작업 폴더, read-only sandbox, ephemeral 세션, 사용자 설정 미적용으로 실행한다. 프로젝트 문서를 읽는 크기를 0으로 지정한다. 정답과 mock 응답을 프롬프트에 넣지 않는다. 도구를 사용하지 않도록 지시하고, 기록에서 명령 실행·파일 변경·MCP·검색 호출을 발견하면 비교에서 실패로 처리한다. 이 검사는 실행 후 확인이므로 도구 자체를 완전히 차단하는 기능은 아니다.
+
+검토 출력에는 JSON Schema를 적용한다. CLI가 출력한 입력·캐시 입력·출력 토큰을 저장한다. CLI 이벤트에 실제 반환 모델 ID나 서비스 티어가 없으면 이를 추측하지 않는다. `requested_model`은 요청한 모델이며 `model`은 null이다. 구독 사용량을 USD로 환산하지 않으므로 비용도 null이다. CLI 시작과 로그인 처리 시간을 응답 시간에 포함한다. API의 `max_output_tokens` 설정은 Codex 실행 경로에 적용하지 않는다.
+
+공식 문서: [Codex 인증](https://learn.chatgpt.com/docs/auth), [비대화형 실행](https://learn.chatgpt.com/docs/noninteractive).
+
 ## 실제 API 실행
 
 ```sh
@@ -60,8 +79,12 @@ OpenAI Responses API를 사용한다. API 키는 파일이나 결과에 기록�
 
 `regression` 사례는 정답 초안을 검토 모델이 틀리게 바꾸는 상황을 mock으로 재현한다. 정확도와 함께 이 지표를 봐야 검토의 부작용을 확인할 수 있다. 실패 시 보존한 초안이 정답일 수 있으므로 정확도와 실패 수도 함께 봐야 한다.
 
+## 실제 실행 기록
+
+[Codex OAuth 초기 실험](examples/codex-report.md)에 24건 비교 결과와 별도 오답 수정 시험을 기록했다. 수학적 정답과 출력 형식 일치를 구분해 해석한다.
+
 ## 실험 범위
 
 이 저장소는 orchestration과 측정용 CLI다. 웹 UI·웹 검색·도구 실행·실제 행동 승인 기능은 포함하지 않았다. 두 모델 모두 같은 오류를 낼 수 있다. 실제 모델 비교는 대표 질문을 더 모으고 같은 모델 설정·출력 예산·자료로 반복 실행해야 한다. 초안을 보고 사용자가 행동하기까지의 시간도 별도로 측정할 필요가 있다.
 
-API 키 없이 확인한 내용은 테스트와 mock 실행이다. 실제 모델의 지연 시간·비용·정확도는 아직 측정하지 않았다.
+API 경로와 Codex OAuth 경로는 별도로 검증한다. 실제 실험 결과는 examples와 results 폴더의 제공자 표시를 확인한다. 기본 mock 실행의 수치를 실제 모델 결과로 해석하지 않는다.

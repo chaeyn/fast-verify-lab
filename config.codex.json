@@ -1,0 +1,5 @@
+{
+  "timeout_seconds": 120,
+  "fast": {"model": "gpt-6-luna", "reasoning_effort": "low"},
+  "strong": {"model": "gpt-6-astra", "reasoning_effort": "high"}
+}
