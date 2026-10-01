@@ -1,0 +1,7 @@
+{
+  "base_url": "https://api.openai.com/v1",
+  "timeout_seconds": 90,
+  "max_output_tokens": 4096,
+  "fast": {"model": "SET_FAST_MODEL", "reasoning_effort": null, "input_usd_per_million": null, "cached_input_usd_per_million": null, "output_usd_per_million": null},
+  "strong": {"model": "SET_STRONG_MODEL", "reasoning_effort": "high", "input_usd_per_million": null, "cached_input_usd_per_million": null, "output_usd_per_million": null}
+}
