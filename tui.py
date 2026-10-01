@@ -89,13 +89,13 @@ class Session:
         self.running = False
         self.events = []
         self.result = None
-        self.message = 'Enter로 실행. e로 질문 입력.'
+        self.message = 'Press Enter to run, or e to edit the prompt.'
         self.saved = None
         self.started = 0
         self.scroll = 0
         self.editing, self.buffer = self.provider != 'mock', ''
         if self.editing:
-            self.message = '프롬프트를 입력하고 Enter로 실행하세요.'
+            self.message = 'Type your prompt and press Enter to run.'
 
     @property
     def case(self):
@@ -105,7 +105,7 @@ class Session:
         if self.running:
             return
         if self.provider == 'mock' and self.custom:
-            self.message = '직접 입력한 질문은 codex 또는 openai로 실행하세요. mock은 고정 사례만 지원합니다.'
+            self.message = 'Use codex or openai for custom prompts. Mock supports sample cases only.'
             return
         self.events, self.result, self.saved = [], None, None
         self.scroll = 0
@@ -118,7 +118,7 @@ class Session:
             return
         self.worker = Worker(provider, self.mode, dict(self.case))
         self.running, self.started = True, time.perf_counter()
-        self.message = '초안 생성과 검토를 실행하고 있습니다.'
+        self.message = 'Running draft generation and review.'
         self.worker.start()
 
     def poll(self):
@@ -131,22 +131,22 @@ class Session:
                 return
             if kind == 'event':
                 self.events.append(item)
-                self.message = {'draft': '초안을 표시했습니다. 검토를 기다립니다.',
-                                'verified': '검토 완료. 첫 답변을 그대로 사용합니다.',
-                                'final': '실행 완료.', 'error': '실행 실패. 초안의 검토를 완료하지 못했습니다.'}.get(item['event'], '')
+                self.message = {'draft': 'Draft ready. Waiting for review.',
+                                'verified': 'Review complete. No changes needed.',
+                                'final': 'Run complete.', 'error': 'Run failed. The draft has not passed review.'}.get(item['event'], '')
             else:
                 self.running = False
                 if kind == 'result':
                     self.result = item
                     if 'expected' in self.case:
                         item['grade'] = grade(item, self.case['expected'])
-                    self.message = '실행 완료: ' + item['status']
+                    self.message = 'Run complete: ' + item['status']
                 elif kind == 'cancelled':
                     self.result = {'status': 'cancelled', 'events': self.events, 'answer': None}
-                    self.message = '실행을 취소했습니다. 초안은 검토 완료 답변이 아닙니다.'
+                    self.message = 'Cancelled. The draft has not passed review.'
                 else:
                     self.result = {'status': 'failed', 'events': self.events, 'error_type': item}
-                    self.message = '실행 실패: ' + item
+                    self.message = 'Run failed: ' + item
                 self.save()
 
     def save(self):
@@ -160,7 +160,7 @@ class Session:
             path.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
             self.saved = str(path.resolve())
         except OSError:
-            self.message += ' 결과 파일 저장 실패.'
+            self.message += ' Could not save the result file.'
 
     def key(self, key):
         if self.editing:
@@ -186,7 +186,7 @@ class Session:
             return False
         if key == 'x' and self.running:
             self.worker.cancel()
-            self.message = '취소 요청 중…'
+            self.message = 'Cancelling...'
         if key == curses.KEY_NPAGE:
             self.scroll += 10
         elif key == curses.KEY_PPAGE:
@@ -208,7 +208,7 @@ class Session:
         elif key == 'n':
             self.clear_display()
             self.editing, self.buffer = True, ''
-            self.message = '새 프롬프트를 입력하고 Enter로 실행하세요.'
+            self.message = 'Type a new prompt and press Enter to run.'
         elif key == 'e':
             self.editing, self.buffer = True, self.case['question']
         elif key == 'r':
@@ -219,7 +219,7 @@ class Session:
     def clear_display(self):
         self.events, self.result, self.saved, self.worker = [], None, None, None
         self.scroll = 0
-        self.message = 'Enter로 실행. e로 질문 입력.'
+        self.message = 'Press Enter to run, or e to edit the prompt.'
 
     def content(self, columns):
         lines = []
@@ -228,24 +228,24 @@ class Session:
             lines.extend((line, 0) for line in wrap(text, columns))
             lines.append(('', 0))
         section('PROMPT' if self.editing else 'QUESTION  ' + self.case['id'],
-                (self.buffer or '직접 프롬프트를 입력하세요.') if self.editing else self.case['question'])
+                (self.buffer or 'Type your prompt here.') if self.editing else self.case['question'])
         draft = next((e for e in self.events if e['event'] == 'draft'), None)
         final = next((e for e in reversed(self.events) if e['event'] == 'final'), None)
-        section('DRAFT  /  초안', draft['answer'] if draft else '아직 초안이 없습니다.')
+        section('DRAFT', draft['answer'] if draft else 'No draft yet.')
         verified = any(e['event'] == 'verified' for e in self.events)
         if verified:
-            section('REVIEW  /  검토', '검토 완료 · 수정 없음')
+            section('REVIEW', 'Review complete · No changes needed')
         elif final:
-            section('REVIEW  /  수정 답변' if final['status'] == 'corrected' else 'REVIEW  /  결과', final['answer'])
+            section('REVIEW  /  CORRECTION' if final['status'] == 'corrected' else 'REVIEW  /  RESULT', final['answer'])
         else:
-            section('REVIEW  /  검토', '검토 중…' if self.running else '검토하지 않은 답변입니다.' if draft else '아직 실행하지 않았습니다.')
+            section('REVIEW', 'Reviewing...' if self.running else 'This answer has not been reviewed.' if draft else 'No run yet.')
         if final:
             section('STATUS', final['status'] + ('  |  ' + final['reason'] if final.get('reason') else ''))
         if self.result and self.result.get('calls'):
             result = self.result
             first = result.get('first_answer_ms')
-            section('METRICS', f"첫 답 {first / 1000:.2f}s" if first is not None else '첫 답 없음')
-            lines.extend((line, 0) for line in wrap(f"최종 {result['final_ms']/1000:.2f}s  |  호출 {len(result['calls'])}회", columns))
+            section('METRICS', f"First answer {first / 1000:.2f}s" if first is not None else 'No first answer')
+            lines.extend((line, 0) for line in wrap(f"Completed {result['final_ms']/1000:.2f}s  |  Calls {len(result['calls'])}", columns))
             for call in result['calls']:
                 usage = call.get('usage') or {}
                 lines.extend((line, 0) for line in wrap(f"{call['stage']}: {call.get('model_label') or call.get('requested_model') or call.get('model') or '-'} ({call.get('requested_service_tier') or 'unspecified'})  input {usage.get('input_tokens', '-')} / output {usage.get('output_tokens', '-')}", columns))
@@ -279,12 +279,12 @@ def draw(screen, session):
         put(3 + index, text, curses.A_BOLD | curses.color_pair(1) if accent else 0)
     put(rows - 4, session.message, curses.color_pair(2))
     if session.editing:
-        put(rows - 3, 'PROMPT  Enter: 실행  Esc: 취소  Ctrl+U: 비우기')
+        put(rows - 3, 'PROMPT  Enter: run  Esc: cancel  Ctrl+U: clear')
         edit_lines = wrap(session.buffer + '|', columns - 3)
         put(rows - 2, edit_lines[-1])
     else:
-        put(rows - 3, 'Enter 실행 | n 새 질문 | e 수정 | ↑↓ 사례 | p 제공자 | m 방식')
-        put(rows - 2, 'PgUp/PgDn 스크롤 | x 실행 취소 | q 종료', curses.A_DIM)
+        put(rows - 3, 'Enter run | n new | e edit | Up/Down cases | p provider | m mode')
+        put(rows - 2, 'PgUp/PgDn scroll | x cancel run | q quit', curses.A_DIM)
     screen.refresh()
 
 

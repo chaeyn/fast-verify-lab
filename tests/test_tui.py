@@ -45,7 +45,7 @@ class SessionTests(unittest.TestCase):
             self.assertEqual(session.case['question'], '새 질문')
             session.key('\n')
             self.assertFalse(session.running)
-            self.assertIn('mock은 고정 사례만', session.message)
+            self.assertIn('Mock supports sample cases only', session.message)
             session.key('r')
             self.assertEqual(session.case['id'], 'multiply')
 
@@ -96,7 +96,7 @@ class SessionTests(unittest.TestCase):
                               {'event': 'verified', 'status': 'accepted'}]
             content = '\n'.join(text for text, _ in session.content(80))
             self.assertEqual(content.count('unique-answer'), 1)
-            self.assertIn('수정 없음', content)
+            self.assertIn('No changes needed', content)
 
     def test_choice_keys_and_scrolling_during_run(self):
         with tempfile.TemporaryDirectory() as folder:
