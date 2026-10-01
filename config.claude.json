@@ -1,0 +1,10 @@
+{
+  "timeout_seconds": 120,
+  "max_output_tokens": 4096,
+  "fast": {
+    "model": "haiku"
+  },
+  "strong": {
+    "model": "sonnet"
+  }
+}

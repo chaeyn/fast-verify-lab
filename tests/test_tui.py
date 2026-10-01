@@ -83,6 +83,36 @@ class SessionTests(unittest.TestCase):
             self.assertIsNone(session.result['answer'])
             self.assertFalse(any(e['event'] == 'final' for e in session.events))
 
+    def test_help_multiline_and_connection_setup(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session = Session(args(folder, 'codex'))
+            session.key(curses.KEY_F1)
+            self.assertTrue(session.help)
+            self.assertIn('HELP', session.content(80)[0][0])
+            session.key(curses.KEY_NPAGE)
+            self.assertEqual(session.scroll, 10)
+            session.key('a')
+            self.assertFalse(session.help)
+            self.assertTrue(session.editing)
+            session.key('a'); session.key('\x0f'); session.key('b')
+            self.assertEqual(session.buffer, 'a\nb')
+            with patch.object(session, 'start') as start:
+                session.key('\x04')
+                start.assert_called_once()
+            self.assertEqual(session.case['question'], 'a\nb')
+            self.assertEqual(session.key('s'), 'setup')
+            session.running = True
+            self.assertTrue(session.key('s'))
+
+    def test_no_save_keeps_result_in_memory(self):
+        with tempfile.TemporaryDirectory() as folder:
+            options = args(folder); options.no_save = True
+            session = Session(options)
+            session.start(); await_result(session)
+            self.assertEqual(session.result['status'], 'corrected')
+            self.assertIsNone(session.saved)
+            self.assertEqual(list(Path(folder).iterdir()), [])
+
     def test_display_width_and_control_filtering(self):
         self.assertEqual(width('한글abc'), 7)
         self.assertEqual(wrap('한글abc', 4), ['한글', 'abc'])

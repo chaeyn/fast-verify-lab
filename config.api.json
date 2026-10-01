@@ -1,0 +1,11 @@
+{
+  "timeout_seconds": 120,
+  "max_output_tokens": 4096,
+  "fast": {
+    "model": "SET_FAST_MODEL"
+  },
+  "strong": {
+    "model": "SET_REVIEW_MODEL"
+  },
+  "base_url": "https://api.openai.com/v1"
+}

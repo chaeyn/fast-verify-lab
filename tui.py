@@ -14,7 +14,7 @@ import unicodedata
 from lab import MODES, grade, make_provider, run
 
 ROOT = Path(__file__).resolve().parent
-PROVIDERS = ('codex', 'mock', 'openai')
+from providers import PROVIDERS, load_config
 
 BANNER = (
     r" ____    _    ____ _____  __     _______ ____  ___ _____ __   __",
@@ -93,6 +93,8 @@ class Session:
             raise ValueError('No cases found')
         self.index, self.custom = 0, None
         self.provider, self.mode = args.provider, args.mode
+        self.help = False
+        self.connection_labels = {}
         self.worker = None
         self.providers = {}
         self.running = False
@@ -114,17 +116,18 @@ class Session:
         if self.running:
             return
         if self.provider == 'mock' and self.custom:
-            self.message = 'Use codex or openai for custom prompts. Mock supports sample cases only.'
+            self.message = 'Choose a live connection for custom prompts. Mock supports sample cases only.'
             return
         self.events, self.result, self.saved = [], None, None
         self.scroll = 0
         try:
-            config_path = self.args.config or ROOT / ('config.codex.json' if self.provider == 'codex' else 'config.example.json')
-            config = json.loads(Path(config_path).read_text())
+            config = load_config(self.provider, self.args.config)
             cache_key = (self.provider, json.dumps(config, sort_keys=True))
             if cache_key not in self.providers:
                 self.providers[cache_key] = make_provider(self.provider, config)
             provider = self.providers[cache_key]
+            if hasattr(provider, 'prepare'):
+                provider.prepare(self.mode)
         except (ValueError, OSError, KeyError) as exc:
             self.message = str(exc)
             return
@@ -162,6 +165,8 @@ class Session:
                 self.save()
 
     def save(self):
+        if getattr(self.args, 'no_save', False):
+            return
         folder = Path(self.args.output)
         try:
             folder.mkdir(parents=True, exist_ok=True)
@@ -175,22 +180,40 @@ class Session:
             self.message += ' Could not save the result file.'
 
     def key(self, key):
+        if key == curses.KEY_F1:
+            self.help = not self.help
+            return True
+        if self.help:
+            if key in (curses.KEY_NPAGE, curses.KEY_PPAGE):
+                self.scroll = max(0, self.scroll + (10 if key == curses.KEY_NPAGE else -10))
+                return True
+            self.help = False
+            self.scroll = 0
+            return key != 'q'
         if self.editing:
             if key == '\x1b':
                 self.editing = False
-            elif key in ('\n', '\r', curses.KEY_ENTER):
+            elif key in ('\n', '\r', '\x04', curses.KEY_ENTER):
                 if self.buffer.strip():
                     self.custom = {'id': 'custom', 'question': self.buffer.strip()}
                     self.editing = False
                     self.clear_display()
                     if self.provider != 'mock':
                         self.start()
+            elif key == '\x0f':
+                self.buffer += '\n'
+            elif key == '\x17':
+                self.buffer = self.buffer.rstrip()
+                self.buffer = self.buffer[:max(self.buffer.rfind(' '), self.buffer.rfind('\n')) + 1]
             elif key == '\x15':
                 self.buffer = ''
             elif key in ('\x7f', '\b', curses.KEY_BACKSPACE):
                 self.buffer = self.buffer[:-1]
             elif isinstance(key, str) and key.isprintable():
                 self.buffer += key
+            return True
+        if key == '?':
+            self.help = True
             return True
         if key == 'q':
             if self.running:
@@ -205,6 +228,8 @@ class Session:
             self.scroll = max(0, self.scroll - 10)
         if self.running:
             return True
+        if key == 's':
+            return 'setup'
         if key in ('\n', '\r', curses.KEY_ENTER):
             self.start()
         elif key == 'p':
@@ -234,6 +259,27 @@ class Session:
         self.message = 'Press Enter to run, or e to edit the prompt.'
 
     def content(self, columns):
+        if self.help:
+            return [(part, 0) for line in (
+                'HELP · FAST VERIFY LAB', '',
+                'Enter: run prompt or selected sample', 'n: new prompt   e: edit   Esc: leave editor',
+                'Ctrl+O: add newline   Ctrl+D: run multiline prompt',
+                'Ctrl+U: clear prompt   Ctrl+W: delete last word',
+                's: connection setup   p: cycle provider   m: mode   r: samples',
+                'PgUp/PgDn: scroll   x: cancel run   q: quit',
+                'F1: help from any screen   ?: help outside editor', '',
+                'sequential: draft -> one review (recommended)',
+                'fast / strong: one model, no review',
+                'parallel: independent answer plus review (3 calls)', '',
+                'accepted: reviewer kept the draft; answer shown once',
+                'corrected: reviewer changed it; correction shown below',
+                'uncertain: reviewer could not resolve the answer',
+                'failed review: draft stays unverified', '',
+                'Configure both connections: python3 setup.py',
+                'Check installation and login: python3 setup.py --doctor',
+                'Results include prompts and answers. Use --no-save to disable.',
+                'See GUIDE.md for setup, billing and troubleshooting.', '',
+                'PgUp/PgDn to scroll; any other key closes help.') for part in wrap(line, columns)]
         lines = []
         def section(label, text):
             lines.append((label, 1))
@@ -244,7 +290,7 @@ class Session:
         draft = next((e for e in self.events if e['event'] == 'draft'), None)
         final = next((e for e in reversed(self.events) if e['event'] == 'final'), None)
         partial = ''.join(e['delta'] for e in self.events if e['event'] == 'draft_delta')
-        section('DRAFT', draft['answer'] if draft else partial or 'No draft yet.')
+        section('DRAFT · generating' if self.running and not draft else 'DRAFT', draft['answer'] if draft else partial or 'No draft yet.')
         verified = any(e['event'] == 'verified' for e in self.events)
         if verified:
             section('REVIEW', 'Review complete · No changes needed')
@@ -254,6 +300,11 @@ class Session:
             section('REVIEW', 'Reviewing...' if self.running else 'This answer has not been reviewed.' if draft else 'No run yet.')
         if final:
             section('STATUS', final['status'] + ('  |  ' + final['reason'] if final.get('reason') else ''))
+        if self.result and self.result.get('status') in ('failed', 'verification_failed'):
+            error = next((e for e in reversed(self.events) if e['event'] == 'error'), {})
+            if error.get('error_message'):
+                section('CONNECTION ERROR', error['error_message'])
+            section('RECOVERY', 'Check login and model access with python3 setup.py --doctor.\nAPI: check your key, base URL and model IDs in config.\nEdit the question with e, or press Enter to retry.')
         if self.result and self.result.get('calls'):
             result = self.result
             first = result.get('first_answer_ms')
@@ -293,7 +344,16 @@ def draw(screen, session):
     put(header_rows, ' :: FAST VERIFY LAB ::  draft -> review' if large_banner else 'FAST VERIFY LAB',
         curses.A_BOLD | curses.color_pair(1))
     put(header_rows + 1, f"provider: {session.provider}   mode: {session.mode}   " + (f'running {elapsed:.1f}s' if session.running else 'ready'))
-    put(header_rows + 2, '-' * (columns - 3), curses.A_DIM)
+    try:
+        if session.provider not in session.connection_labels:
+            config = load_config(session.provider, session.args.config)
+            session.connection_labels[session.provider] = config
+        config = session.connection_labels[session.provider]
+        roles = [f"{config[r].get('provider', session.provider)}/{config[r]['model']}" for r in ('fast', 'strong')]
+        connection = ' -> '.join(roles)
+    except (OSError, ValueError, KeyError):
+        connection = 'Run python3 setup.py to configure connections'
+    put(header_rows + 2, connection, curses.A_DIM)
     content_top = header_rows + 3
     lines = session.content(columns - 3)
     height = rows - content_top - 4
@@ -302,12 +362,12 @@ def draw(screen, session):
         put(content_top + index, text, curses.A_BOLD | curses.color_pair(1) if accent else 0)
     put(rows - 4, session.message, curses.color_pair(2))
     if session.editing:
-        put(rows - 3, 'PROMPT  Enter: run  Esc: cancel  Ctrl+U: clear')
+        put(rows - 3, 'Enter run | Ctrl+O newline | Ctrl+D run | Esc back | F1 help')
         edit_lines = wrap(session.buffer + '|', columns - 3)
         put(rows - 2, edit_lines[-1])
     else:
-        put(rows - 3, 'Enter run | n new | e edit | Up/Down cases | p provider | m mode')
-        put(rows - 2, 'PgUp/PgDn scroll | x cancel run | q quit', curses.A_DIM)
+        put(rows - 3, 'Enter run | n new | e edit | s setup | p provider | m mode')
+        put(rows - 2, 'PgUp/PgDn scroll | x cancel | q quit | F1 / ? help', curses.A_DIM)
     screen.refresh()
 
 
@@ -328,7 +388,10 @@ def application(screen, session):
                 key = screen.get_wch()
             except curses.error:
                 continue
-            if not session.key(key):
+            action = session.key(key)
+            if action == 'setup':
+                return 'setup'
+            if not action:
                 break
     finally:
         if session.worker and session.worker.thread.is_alive():
@@ -342,17 +405,30 @@ def application(screen, session):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--provider', choices=PROVIDERS, default='codex')
+    parser.add_argument('--provider', choices=PROVIDERS, default=None)
     parser.add_argument('--mode', choices=MODES, default='sequential')
     parser.add_argument('--config')
+    parser.add_argument('--setup', action='store_true', help='Configure draft and review connections')
+    parser.add_argument('--no-save', action='store_true', help='Do not save questions or answers locally')
     parser.add_argument('--cases', default=str(ROOT / 'data/cases.jsonl'))
     parser.add_argument('--output', default=str(ROOT / 'results'))
     args = parser.parse_args()
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         parser.exit(2, 'TUI requires an interactive terminal. Run python3 tui.py in a terminal.\n')
     try:
-        curses.wrapper(application, Session(args))
-    except (OSError, ValueError, curses.error) as exc:
+        if args.setup or (args.provider is None and not args.config and not (ROOT / 'config.local.json').exists()):
+            from setup import wizard
+            args.config = str(wizard(args.config or ROOT / 'config.local.json'))
+        if args.provider is None:
+            config = load_config('configured', args.config)
+            args.provider = 'configured' if 'provider' in config['fast'] else 'codex'
+        while curses.wrapper(application, Session(args)) == 'setup':
+            from setup import wizard
+            args.config = str(wizard(ROOT / 'config.local.json'))
+            args.provider = 'configured'
+    except (EOFError, KeyboardInterrupt):
+        parser.exit(130, 'Setup cancelled.\n')
+    except (OSError, ValueError, KeyError, curses.error) as exc:
         parser.exit(2, f'{type(exc).__name__}: {exc}\n')
 
 

@@ -47,12 +47,20 @@ def estimated_cost(usage, spec):
     return ((usage['input_tokens'] - cached) * rates[0] + cached * rates[1] + usage['output_tokens'] * rates[2]) / 1_000_000
 
 
+class ProviderError(RuntimeError):
+    """Only messages constructed by adapters may be displayed to the user."""
+    def __init__(self, message):
+        super().__init__(message)
+        self.user_message = message
+
+
 class OpenAIProvider:
     def __init__(self, config):
         self.config = config
-        self.key = os.environ.get('OPENAI_API_KEY')
+        self.key_env = config.get('api_key_env', 'OPENAI_API_KEY')
+        self.key = os.environ.get(self.key_env)
         if not self.key:
-            raise ValueError('Set OPENAI_API_KEY for live runs')
+            raise ValueError(f'Set {self.key_env} for live runs. See GUIDE.md.')
         if any(config[role]['model'].startswith('SET_') for role in ('fast', 'strong')):
             raise ValueError('Set fast.model and strong.model in config')
 
@@ -88,9 +96,11 @@ class OpenAIProvider:
                 return json.load(response)
         except urllib.error.HTTPError as exc:
             # Do not log bodies or headers: provider errors may contain sensitive input.
-            raise RuntimeError(f'API HTTP {exc.code}') from None
+            code = exc.code
+            exc.close()
+            raise ProviderError(f'API HTTP {code}') from None
         except (urllib.error.URLError, TimeoutError):
-            raise RuntimeError('API connection failed or timed out') from None
+            raise ProviderError('API connection failed or timed out') from None
 
 
 class CodexProvider:
@@ -237,7 +247,7 @@ async def run(provider, mode, case, emit=lambda event: None):
     except Exception as exc:
         # Preserve the visible draft and do not turn a verifier failure into acceptance.
         answer = draft
-        event('error', error_type=type(exc).__name__, answer=draft, status='verification_failed' if draft is not None else 'failed')
+        event('error', error_type=type(exc).__name__, error_message=getattr(exc, 'user_message', None), answer=draft, status='verification_failed' if draft is not None else 'failed')
     finally:
         if independent_task and not independent_task.done():
             independent_task.cancel()
@@ -282,6 +292,15 @@ def make_provider(name, config):
         return MockProvider()
     if name == 'openai':
         return OpenAIProvider(config)
+    from providers import HTTPProvider, ClaudeProvider, RoleProvider
+    if name in ('api', 'anthropic'):
+        return HTTPProvider(config, name)
+    if name == 'claude':
+        return ClaudeProvider(config)
+    if name == 'configured':
+        return RoleProvider(config)
+    if name != 'codex':
+        raise ValueError('Unknown provider: ' + name)
     if config.get('transport', 'app-server') == 'exec':
         return CodexProvider(config)
     from codex_server import CodexServerProvider
@@ -290,8 +309,8 @@ def make_provider(name, config):
 
 async def main(args):
     cases = [json.loads(line) for line in Path(args.cases).read_text().splitlines() if line.strip()]
-    config_path = args.config or str(Path(__file__).with_name('config.codex.json' if args.provider == 'codex' else 'config.example.json'))
-    config = json.loads(Path(config_path).read_text())
+    from providers import load_config
+    config = load_config(args.provider, args.config)
     provider = make_provider(args.provider, config)
     try:
         if args.command == 'demo':
@@ -328,7 +347,7 @@ async def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('demo', 'bench'))
-    parser.add_argument('--provider', choices=('mock', 'openai', 'codex'), default='mock')
+    parser.add_argument('--provider', choices=('mock', 'openai', 'codex', 'claude', 'anthropic', 'api', 'configured'), default='mock')
     parser.add_argument('--config', default=None)
     parser.add_argument('--cases', default=str(Path(__file__).parent / 'data/cases.jsonl'))
     parser.add_argument('--mode', choices=MODES, default='sequential')
