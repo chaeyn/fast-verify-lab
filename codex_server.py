@@ -4,6 +4,8 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
+import errno
 import tempfile
 import threading
 import time
@@ -44,7 +46,7 @@ class AppServerClient:
                 '-c', 'project_doc_max_bytes=0', '-c', 'features.shell_tool=false',
                 '-c', 'web_search="disabled"', '-c', 'forced_login_method="chatgpt"',
                 stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.DEVNULL, cwd=self.folder.name, env=env)
+                stderr=asyncio.subprocess.DEVNULL, cwd=self.folder.name, env=env, start_new_session=True)
             self.reader = asyncio.create_task(self.read())
             try:
                 await self.request('initialize', {'clientInfo': {'name': 'fast_verify_lab', 'version': '0.2.0'},
@@ -101,14 +103,24 @@ class AppServerClient:
                 queue.put_nowait({'method': 'disconnected', 'params': {}})
 
     async def close(self):
-        if self.process and self.process.returncode is None:
-            self.process.kill()
+        if self.process:
+            try:
+                os.killpg(self.process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
             await self.process.wait()
         if self.reader:
             self.reader.cancel()
             await asyncio.gather(self.reader, return_exceptions=True)
         if self.folder:
-            self.folder.cleanup()
+            for attempt in range(5):
+                try:
+                    self.folder.cleanup()
+                    break
+                except OSError as exc:
+                    if exc.errno != errno.ENOTEMPTY or attempt == 4:
+                        raise
+                    await asyncio.sleep(.05)
         self.process = self.reader = self.folder = None
         self.notifications.clear()
 
