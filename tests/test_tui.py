@@ -151,6 +151,8 @@ class TerminalTests(unittest.TestCase):
                 saved = list(Path(folder).glob('ui-*.json'))
                 self.assertEqual(len(saved), 1)
                 self.assertEqual(json.loads(saved[0].read_text())['result']['answer'], '323')
+                self.assertIn(b'____ _____', output)
+                self.assertIn(b':: FAST VERIFY LAB ::', output)
                 self.assertIn(b'DRAFT', output)
                 self.assertIn(b'REVIEW', output)
             finally:

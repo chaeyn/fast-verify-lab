@@ -16,6 +16,14 @@ from lab import MODES, grade, make_provider, run
 ROOT = Path(__file__).resolve().parent
 PROVIDERS = ('codex', 'mock', 'openai')
 
+BANNER = (
+    r" ____    _    ____ _____  __     _______ ____  ___ _____ __   __",
+    r"|  __|  / \  / ___|_   _| \ \   / / ____|  _ \|_ _|  ___|\ \ / /",
+    r"| |_   / _ \ \___ \ | |    \ \ / /|  _| | |_) || || |_    \ V / ",
+    r"|  _| / ___ \ ___) || |     \ V / | |___|  _ < | ||  _|    | |  ",
+    r"|_|  /_/   \_\____/ |_|      \_/  |_____|_| \_\___|_|      |_|  ",
+)
+
 
 def width(text):
     return sum(0 if unicodedata.combining(c) else 2 if unicodedata.east_asian_width(c) in ('W', 'F') else 1 for c in text)
@@ -276,14 +284,22 @@ def draw(screen, session):
         screen.refresh()
         return
     elapsed = time.perf_counter() - session.started if session.running else 0
-    put(0, 'FAST VERIFY LAB', curses.A_BOLD | curses.color_pair(1))
-    put(1, f"provider: {session.provider}   mode: {session.mode}   " + (f'running {elapsed:.1f}s' if session.running else 'ready'))
-    put(2, '-' * (columns - 3), curses.A_DIM)
+    large_banner = rows >= 26 and columns >= max(map(len, BANNER)) + 3
+    header_rows = 0
+    if large_banner:
+        for row, line in enumerate(BANNER):
+            put(row, line, curses.A_BOLD | curses.color_pair(3))
+        header_rows = len(BANNER)
+    put(header_rows, ' :: FAST VERIFY LAB ::  draft -> review' if large_banner else 'FAST VERIFY LAB',
+        curses.A_BOLD | curses.color_pair(1))
+    put(header_rows + 1, f"provider: {session.provider}   mode: {session.mode}   " + (f'running {elapsed:.1f}s' if session.running else 'ready'))
+    put(header_rows + 2, '-' * (columns - 3), curses.A_DIM)
+    content_top = header_rows + 3
     lines = session.content(columns - 3)
-    height = rows - 7
+    height = rows - content_top - 4
     session.scroll = min(session.scroll, max(0, len(lines) - height))
     for index, (text, accent) in enumerate(lines[session.scroll:session.scroll + height]):
-        put(3 + index, text, curses.A_BOLD | curses.color_pair(1) if accent else 0)
+        put(content_top + index, text, curses.A_BOLD | curses.color_pair(1) if accent else 0)
     put(rows - 4, session.message, curses.color_pair(2))
     if session.editing:
         put(rows - 3, 'PROMPT  Enter: run  Esc: cancel  Ctrl+U: clear')
@@ -303,6 +319,7 @@ def application(screen, session):
         curses.use_default_colors()
         curses.init_pair(1, curses.COLOR_CYAN, -1)
         curses.init_pair(2, curses.COLOR_YELLOW, -1)
+        curses.init_pair(3, curses.COLOR_GREEN, -1)
     try:
         while True:
             session.poll()
