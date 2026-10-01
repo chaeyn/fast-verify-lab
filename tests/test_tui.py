@@ -89,6 +89,15 @@ class SessionTests(unittest.TestCase):
         self.assertNotIn('\x1b', ''.join(wrap('\x1b[31mhello', 40)))
         self.assertEqual(width('a\u0301'), 1)
 
+    def test_accepted_answer_appears_once_in_ui(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session = Session(args(folder))
+            session.events = [{'event': 'draft', 'answer': 'unique-answer', 'status': 'verifying'},
+                              {'event': 'verified', 'status': 'accepted'}]
+            content = '\n'.join(text for text, _ in session.content(80))
+            self.assertEqual(content.count('unique-answer'), 1)
+            self.assertIn('수정 없음', content)
+
     def test_choice_keys_and_scrolling_during_run(self):
         with tempfile.TemporaryDirectory() as folder:
             session = Session(args(folder))

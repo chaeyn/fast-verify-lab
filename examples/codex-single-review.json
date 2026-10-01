@@ -1,0 +1,85 @@
+{
+  "provider": "codex",
+  "result": {
+    "case_id": "multiply",
+    "mode": "sequential",
+    "question": "17 × 19는 얼마인가? 숫자만 답하라.",
+    "draft": "323",
+    "answer": "323",
+    "status": "accepted",
+    "events": [
+      {
+        "event": "draft",
+        "elapsed_ms": 5765.787709002325,
+        "answer": "323",
+        "status": "verifying"
+      },
+      {
+        "event": "verified",
+        "elapsed_ms": 15807.038083999942,
+        "status": "accepted"
+      }
+    ],
+    "calls": [
+      {
+        "role": "fast",
+        "stage": "draft",
+        "text": "323",
+        "model": null,
+        "requested_model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "model_label": "gpt-6-luna-light",
+        "requested_service_tier": "fast",
+        "service_tier": null,
+        "usage": {
+          "input_tokens": 19892,
+          "output_tokens": 5,
+          "input_tokens_details": {
+            "cached_tokens": 19200
+          }
+        },
+        "codex_usage": {
+          "input_tokens": 19892,
+          "cached_input_tokens": 19200,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        },
+        "cost_usd": null,
+        "auth": "chatgpt",
+        "duration_ms": 5765.740750000987
+      },
+      {
+        "role": "strong",
+        "stage": "review",
+        "text": "{\"status\":\"accepted\",\"answer\":\"323\",\"reason\":\"17 × 19 = 323이다.\"}",
+        "model": null,
+        "requested_model": "gpt-6.1-sol",
+        "reasoning_effort": "high",
+        "model_label": "gpt-6.1-sol-high",
+        "requested_service_tier": "standard",
+        "service_tier": null,
+        "usage": {
+          "input_tokens": 16115,
+          "output_tokens": 90,
+          "input_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "codex_usage": {
+          "input_tokens": 16115,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 90,
+          "reasoning_output_tokens": 57
+        },
+        "cost_usd": null,
+        "auth": "chatgpt",
+        "duration_ms": 10041.077083995333
+      }
+    ],
+    "first_answer_ms": 5765.787709002325,
+    "final_ms": 15807.038083999942,
+    "cost_usd": null
+  }
+}

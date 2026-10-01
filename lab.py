@@ -224,12 +224,14 @@ async def run(provider, mode, case, emit=lambda event: None):
             event('draft', answer=draft, status='unreviewed' if mode == 'fast' else 'verifying')
             if mode == 'fast':
                 answer = draft
-                event('final', answer=answer, status='unreviewed')
             else:
                 independent = await independent_task if independent_task else None
                 review = parse_review(await call('strong', 'review', draft=draft, independent=independent), draft)
                 answer = review['answer']
-                event('final', **review)
+                if review['status'] == 'accepted':
+                    event('verified', status='accepted')
+                else:
+                    event('final', **review)
     except Exception as exc:
         # Preserve the visible draft and do not turn a verifier failure into acceptance.
         answer = draft
@@ -310,7 +312,7 @@ if __name__ == '__main__':
     parser.add_argument('--provider', choices=('mock', 'openai', 'codex'), default='mock')
     parser.add_argument('--config', default=None)
     parser.add_argument('--cases', default=str(Path(__file__).parent / 'data/cases.jsonl'))
-    parser.add_argument('--mode', choices=MODES, default='parallel')
+    parser.add_argument('--mode', choices=MODES, default='sequential')
     parser.add_argument('--case', default='multiply')
     parser.add_argument('--repeats', type=int, default=1)
     parser.add_argument('--seed', type=int, default=42)

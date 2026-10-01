@@ -132,6 +132,7 @@ class Session:
             if kind == 'event':
                 self.events.append(item)
                 self.message = {'draft': '초안을 표시했습니다. 검토를 기다립니다.',
+                                'verified': '검토 완료. 첫 답변을 그대로 사용합니다.',
                                 'final': '실행 완료.', 'error': '실행 실패. 초안의 검토를 완료하지 못했습니다.'}.get(item['event'], '')
             else:
                 self.running = False
@@ -231,7 +232,13 @@ class Session:
         draft = next((e for e in self.events if e['event'] == 'draft'), None)
         final = next((e for e in reversed(self.events) if e['event'] == 'final'), None)
         section('DRAFT  /  초안', draft['answer'] if draft else '아직 초안이 없습니다.')
-        section('REVIEW  /  최종 답', final['answer'] if final else '검토 완료 답변을 기다립니다.' if self.running else '아직 최종 답이 없습니다.')
+        verified = any(e['event'] == 'verified' for e in self.events)
+        if verified:
+            section('REVIEW  /  검토', '검토 완료 · 수정 없음')
+        elif final:
+            section('REVIEW  /  수정 답변' if final['status'] == 'corrected' else 'REVIEW  /  결과', final['answer'])
+        else:
+            section('REVIEW  /  검토', '검토 중…' if self.running else '검토하지 않은 답변입니다.' if draft else '아직 실행하지 않았습니다.')
         if final:
             section('STATUS', final['status'] + ('  |  ' + final['reason'] if final.get('reason') else ''))
         if self.result and self.result.get('calls'):
@@ -309,7 +316,7 @@ def application(screen, session):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--provider', choices=PROVIDERS, default='codex')
-    parser.add_argument('--mode', choices=MODES, default='parallel')
+    parser.add_argument('--mode', choices=MODES, default='sequential')
     parser.add_argument('--config')
     parser.add_argument('--cases', default=str(ROOT / 'data/cases.jsonl'))
     parser.add_argument('--output', default=str(ROOT / 'results'))

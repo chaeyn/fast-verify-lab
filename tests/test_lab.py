@@ -20,6 +20,18 @@ class PipelineTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(row['answer'], '313' if mode == 'fast' else '323')
             self.assertIsNone(row['cost_usd'])
 
+    async def test_accepted_draft_is_not_emitted_again(self):
+        row = await run(MockProvider(), 'sequential', CASES[1])
+        self.assertEqual([e['event'] for e in row['events']], ['draft', 'verified'])
+        self.assertNotIn('answer', row['events'][-1])
+        self.assertEqual(row['answer'], row['draft'])
+        self.assertEqual(row['status'], 'accepted')
+        self.assertEqual([c['stage'] for c in row['calls']], ['draft', 'review'])
+
+    async def test_fast_only_emits_answer_once(self):
+        row = await run(MockProvider(), 'fast', CASES[0])
+        self.assertEqual([e['event'] for e in row['events']], ['draft'])
+
     async def test_parallel_starts_before_draft_and_publishes_without_waiting(self):
         started, release = asyncio.Event(), asyncio.Event()
         class Provider:
