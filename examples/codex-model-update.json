@@ -1,0 +1,130 @@
+{
+  "provider": "codex",
+  "config": {
+    "timeout_seconds": 120,
+    "fast": {
+      "model": "gpt-6-luna",
+      "reasoning_effort": "low",
+      "label": "gpt-6-luna-light",
+      "service_tier": "fast"
+    },
+    "strong": {
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "high",
+      "label": "gpt-6.1-sol-high",
+      "service_tier": "standard"
+    }
+  },
+  "result": {
+    "case_id": "multiply",
+    "mode": "parallel",
+    "question": "17 × 19는 얼마인가? 숫자만 답하라.",
+    "draft": "323",
+    "answer": "323",
+    "status": "accepted",
+    "events": [
+      {
+        "event": "draft",
+        "elapsed_ms": 5551.1953749955865,
+        "answer": "323",
+        "status": "verifying"
+      },
+      {
+        "event": "final",
+        "elapsed_ms": 16870.32766699849,
+        "status": "accepted",
+        "answer": "323",
+        "reason": "17 × 19 = 323."
+      }
+    ],
+    "calls": [
+      {
+        "role": "fast",
+        "stage": "draft",
+        "text": "323",
+        "model": null,
+        "requested_model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "model_label": "gpt-6-luna-light",
+        "requested_service_tier": "fast",
+        "service_tier": null,
+        "usage": {
+          "input_tokens": 15310,
+          "output_tokens": 5,
+          "input_tokens_details": {
+            "cached_tokens": 11008
+          }
+        },
+        "codex_usage": {
+          "input_tokens": 15310,
+          "cached_input_tokens": 11008,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        },
+        "cost_usd": null,
+        "auth": "chatgpt",
+        "duration_ms": 5551.126999998814
+      },
+      {
+        "role": "strong",
+        "stage": "independent",
+        "text": "323",
+        "model": null,
+        "requested_model": "gpt-6.1-sol",
+        "reasoning_effort": "high",
+        "model_label": "gpt-6.1-sol-high",
+        "requested_service_tier": "standard",
+        "service_tier": null,
+        "usage": {
+          "input_tokens": 20586,
+          "output_tokens": 5,
+          "input_tokens_details": {
+            "cached_tokens": 12288
+          }
+        },
+        "codex_usage": {
+          "input_tokens": 20586,
+          "cached_input_tokens": 12288,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        },
+        "cost_usd": null,
+        "auth": "chatgpt",
+        "duration_ms": 7461.123958004464
+      },
+      {
+        "role": "strong",
+        "stage": "review",
+        "text": "{\"status\":\"accepted\",\"answer\":\"323\",\"reason\":\"17 × 19 = 323.\"}",
+        "model": null,
+        "requested_model": "gpt-6.1-sol",
+        "reasoning_effort": "high",
+        "model_label": "gpt-6.1-sol-high",
+        "requested_service_tier": "standard",
+        "service_tier": null,
+        "usage": {
+          "input_tokens": 16116,
+          "output_tokens": 96,
+          "input_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "codex_usage": {
+          "input_tokens": 16116,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 96,
+          "reasoning_output_tokens": 64
+        },
+        "cost_usd": null,
+        "auth": "chatgpt",
+        "duration_ms": 9405.760458001168
+      }
+    ],
+    "first_answer_ms": 5551.1953749955865,
+    "final_ms": 16870.32766699849,
+    "cost_usd": null
+  }
+}

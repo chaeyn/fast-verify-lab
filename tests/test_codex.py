@@ -7,7 +7,7 @@ from unittest.mock import patch
 from lab import CodexProvider, run
 
 CONFIG = {'timeout_seconds': 1, 'fast': {'model': 'test-fast', 'reasoning_effort': 'low'},
-          'strong': {'model': 'test-strong', 'reasoning_effort': 'high'}}
+          'strong': {'model': 'test-strong', 'reasoning_effort': 'high', 'service_tier': 'standard'}}
 
 def stream(answer='323'):
     return '\n'.join(json.dumps(e) for e in [
@@ -60,10 +60,30 @@ class InvocationTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('--ignore-user-config', captured['command'])
         self.assertIn('forced_login_method="chatgpt"', captured['command'])
         self.assertIn('read-only', captured['command'])
+        self.assertIn('service_tier="default"', captured['command'])
+        self.assertEqual(result['requested_service_tier'], 'standard')
+        self.assertIsNone(result['service_tier'])
         self.assertFalse(Path(captured['kwargs']['cwd']).exists())
         self.assertIsNone(result['model'])
         self.assertIsNone(result['cost_usd'])
         self.assertEqual(result['requested_model'], 'test-strong')
+
+    async def test_fast_tier_is_priority_request(self):
+        captured = []
+        class Process:
+            returncode = 0
+            async def communicate(self, prompt=None):
+                return stream().encode(), b''
+        async def spawn(*command, **kwargs):
+            captured.extend(command)
+            return Process()
+        config = dict(CONFIG, fast=dict(CONFIG['fast'], service_tier='fast', label='fast-light'))
+        with patch('lab.shutil.which', return_value='/fake/codex'), \
+             patch('lab.asyncio.create_subprocess_exec', side_effect=spawn):
+            result = await CodexProvider(config).generate('fast', 'draft', 'Q')
+        self.assertIn('service_tier="priority"', captured)
+        self.assertEqual(result['model_label'], 'fast-light')
+        self.assertEqual(result['requested_service_tier'], 'fast')
 
     async def test_timeout_kills_and_reaps_process(self):
         class Process:

@@ -63,13 +63,13 @@ python3 lab.py demo --provider codex
 python3 lab.py bench --provider codex --repeats 1
 ```
 
-이미 ChatGPT로 로그인한 Codex CLI가 있으면 API 키 없이 실행한다. `config.codex.json`은 빠른 역할에 `gpt-6-luna` / low, 검토 역할에 `gpt-6-astra` / high를 지정한다. 계정에서 사용할 수 있는 모델로 설정을 바꿀 수 있다. 다른 설정은 `--config <파일>`로 지정한다.
+이미 ChatGPT로 로그인한 Codex CLI가 있으면 API 키 없이 실행한다. `config.codex.json`은 빠른 역할에 `gpt-6-luna` / low / fast, 검토 역할에 `gpt-6.1-sol` / high / standard를 지정한다. `gpt-6-luna-light`와 `gpt-6.1-sol-high`는 표시용 이름이며, 모델 ID와 추론 수준을 따로 전달한다. fast는 priority, standard는 default로 요청한다. 계정에서 사용할 수 있는 모델로 설정을 바꿀 수 있다. 다른 설정은 `--config <파일>`로 지정한다.
 
 프로그램은 공식 `codex exec --json`을 호출하고 저장된 로그인을 재사용한다. OAuth 토큰을 직접 읽거나 복사하지 않는다. `forced_login_method=chatgpt`를 지정하고 API 키 환경 변수를 자식 프로세스에서 제거한다. 로그인 상태가 맞지 않으면 실패한다. 사용량은 ChatGPT/Codex 구독 한도에 반영되며 API 데이터 공유 무료 토큰과 별개다.
 
 각 호출은 빈 임시 작업 폴더, read-only sandbox, ephemeral 세션, 사용자 설정 미적용으로 실행한다. 프로젝트 문서를 읽는 크기를 0으로 지정한다. 정답과 mock 응답을 프롬프트에 넣지 않는다. 도구를 사용하지 않도록 지시하고, 기록에서 명령 실행·파일 변경·MCP·검색 호출을 발견하면 비교에서 실패로 처리한다. 이 검사는 실행 후 확인이므로 도구 자체를 완전히 차단하는 기능은 아니다.
 
-검토 출력에는 JSON Schema를 적용한다. CLI가 출력한 입력·캐시 입력·출력 토큰을 저장한다. CLI 이벤트에 실제 반환 모델 ID나 서비스 티어가 없으면 이를 추측하지 않는다. `requested_model`은 요청한 모델이며 `model`은 null이다. 구독 사용량을 USD로 환산하지 않으므로 비용도 null이다. CLI 시작과 로그인 처리 시간을 응답 시간에 포함한다. API의 `max_output_tokens` 설정은 Codex 실행 경로에 적용하지 않는다.
+검토 출력에는 JSON Schema를 적용한다. CLI가 출력한 입력·캐시 입력·출력 토큰을 저장한다. CLI 이벤트에 실제 반환 모델 ID나 서비스 티어가 없으면 이를 추측하지 않는다. `requested_model`은 요청한 모델이며 `model`은 null이다. `requested_service_tier`는 설정한 속도 등급이다. CLI가 실제 반환 티어를 제공하지 않으면 `service_tier`는 null로 기록한다. 구독 사용량을 USD로 환산하지 않으므로 비용도 null이다. CLI 시작과 로그인 처리 시간을 응답 시간에 포함한다. API의 `max_output_tokens` 설정은 Codex 실행 경로에 적용하지 않는다.
 
 공식 문서: [Codex 인증](https://learn.chatgpt.com/docs/auth), [비대화형 실행](https://learn.chatgpt.com/docs/noninteractive).
 

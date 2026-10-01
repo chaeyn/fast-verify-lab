@@ -1,5 +1,15 @@
 {
   "timeout_seconds": 120,
-  "fast": {"model": "gpt-6-luna", "reasoning_effort": "low"},
-  "strong": {"model": "gpt-6-astra", "reasoning_effort": "high"}
+  "fast": {
+    "model": "gpt-6-luna",
+    "reasoning_effort": "low",
+    "label": "gpt-6-luna-light",
+    "service_tier": "fast"
+  },
+  "strong": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "high",
+    "label": "gpt-6.1-sol-high",
+    "service_tier": "standard"
+  }
 }

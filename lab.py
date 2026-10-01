@@ -139,6 +139,9 @@ class CodexProvider:
                        '-c', 'forced_login_method="chatgpt"']
             if spec.get('reasoning_effort'):
                 command += ['-c', 'model_reasoning_effort=' + json.dumps(spec['reasoning_effort'])]
+            if spec.get('service_tier'):
+                tier = {'standard': 'default', 'fast': 'priority'}.get(spec['service_tier'], spec['service_tier'])
+                command += ['-c', 'service_tier=' + json.dumps(tier)]
             if stage == 'review':
                 schema = {'type': 'object', 'properties': {
                     'status': {'type': 'string', 'enum': ['accepted', 'corrected', 'uncertain']},
@@ -167,7 +170,9 @@ class CodexProvider:
                 raise RuntimeError(f'Codex exited with code {process.returncode}')
             text, usage, raw_usage = self.parse_events(stdout.decode())
         return {'text': text, 'model': None, 'requested_model': spec['model'],
-                'reasoning_effort': spec.get('reasoning_effort'), 'usage': usage,
+                'reasoning_effort': spec.get('reasoning_effort'),
+                'model_label': spec.get('label', spec['model']),
+                'requested_service_tier': spec.get('service_tier'), 'service_tier': None, 'usage': usage,
                 'codex_usage': raw_usage, 'cost_usd': None, 'auth': 'chatgpt',
                 'duration_ms': (time.perf_counter() - started) * 1000}
 

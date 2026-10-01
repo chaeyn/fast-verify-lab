@@ -232,7 +232,7 @@ class Session:
             lines.extend((line, 0) for line in wrap(f"최종 {result['final_ms']/1000:.2f}s  |  호출 {len(result['calls'])}회", columns))
             for call in result['calls']:
                 usage = call.get('usage') or {}
-                lines.extend((line, 0) for line in wrap(f"{call['stage']}: {call.get('requested_model') or call.get('model') or '-'}  input {usage.get('input_tokens', '-')} / output {usage.get('output_tokens', '-')}", columns))
+                lines.extend((line, 0) for line in wrap(f"{call['stage']}: {call.get('model_label') or call.get('requested_model') or call.get('model') or '-'} ({call.get('requested_service_tier') or 'unspecified'})  input {usage.get('input_tokens', '-')} / output {usage.get('output_tokens', '-')}", columns))
         if self.saved:
             section('SAVED', self.saved)
         return lines
