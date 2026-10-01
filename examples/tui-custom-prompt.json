@@ -1,0 +1,118 @@
+{
+  "provider": "codex",
+  "mode": "parallel",
+  "question": "17 × 19는 얼마인가? 숫자만 답하라.",
+  "custom_question": true,
+  "result": {
+    "case_id": "custom",
+    "mode": "parallel",
+    "question": "17 × 19는 얼마인가? 숫자만 답하라.",
+    "draft": "323",
+    "answer": "323",
+    "status": "accepted",
+    "events": [
+      {
+        "event": "draft",
+        "elapsed_ms": 4759.64812500024,
+        "answer": "323",
+        "status": "verifying"
+      },
+      {
+        "event": "final",
+        "elapsed_ms": 14444.744415995956,
+        "status": "accepted",
+        "answer": "323",
+        "reason": "17 × 19 = 323이므로 초안이 정확하다."
+      }
+    ],
+    "calls": [
+      {
+        "role": "fast",
+        "stage": "draft",
+        "text": "323",
+        "model": null,
+        "requested_model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "model_label": "gpt-6-luna-light",
+        "requested_service_tier": "fast",
+        "service_tier": null,
+        "usage": {
+          "input_tokens": 15308,
+          "output_tokens": 5,
+          "input_tokens_details": {
+            "cached_tokens": 11008
+          }
+        },
+        "codex_usage": {
+          "input_tokens": 15308,
+          "cached_input_tokens": 11008,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        },
+        "cost_usd": null,
+        "auth": "chatgpt",
+        "duration_ms": 4759.541082996293
+      },
+      {
+        "role": "strong",
+        "stage": "independent",
+        "text": "323",
+        "model": null,
+        "requested_model": "gpt-6.1-sol",
+        "reasoning_effort": "high",
+        "model_label": "gpt-6.1-sol-high",
+        "requested_service_tier": "standard",
+        "service_tier": null,
+        "usage": {
+          "input_tokens": 16002,
+          "output_tokens": 5,
+          "input_tokens_details": {
+            "cached_tokens": 12288
+          }
+        },
+        "codex_usage": {
+          "input_tokens": 16002,
+          "cached_input_tokens": 12288,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        },
+        "cost_usd": null,
+        "auth": "chatgpt",
+        "duration_ms": 6612.1942499958095
+      },
+      {
+        "role": "strong",
+        "stage": "review",
+        "text": "{\"status\":\"accepted\",\"answer\":\"323\",\"reason\":\"17 × 19 = 323이므로 초안이 정확하다.\"}",
+        "model": null,
+        "requested_model": "gpt-6.1-sol",
+        "reasoning_effort": "high",
+        "model_label": "gpt-6.1-sol-high",
+        "requested_service_tier": "standard",
+        "service_tier": null,
+        "usage": {
+          "input_tokens": 16120,
+          "output_tokens": 79,
+          "input_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "codex_usage": {
+          "input_tokens": 16120,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 79,
+          "reasoning_output_tokens": 40
+        },
+        "cost_usd": null,
+        "auth": "chatgpt",
+        "duration_ms": 7829.795249999734
+      }
+    ],
+    "first_answer_ms": 4759.64812500024,
+    "final_ms": 14444.744415995956,
+    "cost_usd": null
+  }
+}

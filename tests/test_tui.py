@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 
 from tui import ROOT, Session, Worker, width, wrap
 from lab import MockProvider
@@ -47,6 +48,25 @@ class SessionTests(unittest.TestCase):
             self.assertIn('mock은 고정 사례만', session.message)
             session.key('r')
             self.assertEqual(session.case['id'], 'multiply')
+
+    def test_direct_prompt_on_start_and_enter_runs_it(self):
+        with tempfile.TemporaryDirectory() as folder:
+            session = Session(args(folder, 'codex'))
+            self.assertTrue(session.editing)
+            session.key('\n')
+            self.assertTrue(session.editing)
+            for c in '내가 입력한 질문':
+                session.key(c)
+            with patch.object(session, 'start') as start:
+                session.key('\n')
+                start.assert_called_once()
+            self.assertFalse(session.editing)
+            self.assertEqual(session.case, {'id': 'custom', 'question': '내가 입력한 질문'})
+            session.key('n')
+            self.assertTrue(session.editing)
+            self.assertEqual(session.buffer, '')
+            session.key('\x1b')
+            self.assertFalse(session.editing)
 
     def test_cancel_preserves_visible_draft_without_final(self):
         with tempfile.TemporaryDirectory() as folder:

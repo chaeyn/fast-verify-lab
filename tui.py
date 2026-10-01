@@ -93,7 +93,9 @@ class Session:
         self.saved = None
         self.started = 0
         self.scroll = 0
-        self.editing, self.buffer = False, ''
+        self.editing, self.buffer = self.provider != 'mock', ''
+        if self.editing:
+            self.message = '프롬프트를 입력하고 Enter로 실행하세요.'
 
     @property
     def case(self):
@@ -168,6 +170,8 @@ class Session:
                     self.custom = {'id': 'custom', 'question': self.buffer.strip()}
                     self.editing = False
                     self.clear_display()
+                    if self.provider != 'mock':
+                        self.start()
             elif key == '\x15':
                 self.buffer = ''
             elif key in ('\x7f', '\b', curses.KEY_BACKSPACE):
@@ -200,6 +204,10 @@ class Session:
             self.index = (self.index + (-1 if key == curses.KEY_UP else 1)) % len(self.cases)
             self.custom = None
             self.clear_display()
+        elif key == 'n':
+            self.clear_display()
+            self.editing, self.buffer = True, ''
+            self.message = '새 프롬프트를 입력하고 Enter로 실행하세요.'
         elif key == 'e':
             self.editing, self.buffer = True, self.case['question']
         elif key == 'r':
@@ -218,7 +226,8 @@ class Session:
             lines.append((label, 1))
             lines.extend((line, 0) for line in wrap(text, columns))
             lines.append(('', 0))
-        section('QUESTION  ' + self.case['id'], self.case['question'])
+        section('PROMPT' if self.editing else 'QUESTION  ' + self.case['id'],
+                (self.buffer or '직접 프롬프트를 입력하세요.') if self.editing else self.case['question'])
         draft = next((e for e in self.events if e['event'] == 'draft'), None)
         final = next((e for e in reversed(self.events) if e['event'] == 'final'), None)
         section('DRAFT  /  초안', draft['answer'] if draft else '아직 초안이 없습니다.')
@@ -263,11 +272,11 @@ def draw(screen, session):
         put(3 + index, text, curses.A_BOLD | curses.color_pair(1) if accent else 0)
     put(rows - 4, session.message, curses.color_pair(2))
     if session.editing:
-        put(rows - 3, 'EDIT  Enter: 적용  Esc: 취소  Ctrl+U: 비우기')
+        put(rows - 3, 'PROMPT  Enter: 실행  Esc: 취소  Ctrl+U: 비우기')
         edit_lines = wrap(session.buffer + '|', columns - 3)
         put(rows - 2, edit_lines[-1])
     else:
-        put(rows - 3, 'Enter 실행 | ↑↓ 사례 | e 질문 | r 사례 복귀 | p 제공자 | m 방식')
+        put(rows - 3, 'Enter 실행 | n 새 질문 | e 수정 | ↑↓ 사례 | p 제공자 | m 방식')
         put(rows - 2, 'PgUp/PgDn 스크롤 | x 실행 취소 | q 종료', curses.A_DIM)
     screen.refresh()
 
