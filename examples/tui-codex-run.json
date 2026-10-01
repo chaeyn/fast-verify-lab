@@ -1,0 +1,115 @@
+{
+  "provider": "codex",
+  "mode": "parallel",
+  "question": "17 × 19는 얼마인가? 숫자만 답하라.",
+  "custom_question": false,
+  "result": {
+    "case_id": "multiply",
+    "mode": "parallel",
+    "question": "17 × 19는 얼마인가? 숫자만 답하라.",
+    "draft": "323",
+    "answer": "323",
+    "status": "accepted",
+    "events": [
+      {
+        "event": "draft",
+        "elapsed_ms": 7057.787166995695,
+        "answer": "323",
+        "status": "verifying"
+      },
+      {
+        "event": "final",
+        "elapsed_ms": 14420.623833997524,
+        "status": "accepted",
+        "answer": "323",
+        "reason": "17 × 19 = 340 − 17 = 323."
+      }
+    ],
+    "calls": [
+      {
+        "role": "strong",
+        "stage": "independent",
+        "text": "323",
+        "model": null,
+        "requested_model": "gpt-6-astra",
+        "reasoning_effort": "high",
+        "usage": {
+          "input_tokens": 20522,
+          "output_tokens": 5,
+          "input_tokens_details": {
+            "cached_tokens": 12288
+          }
+        },
+        "codex_usage": {
+          "input_tokens": 20522,
+          "cached_input_tokens": 12288,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        },
+        "cost_usd": null,
+        "auth": "chatgpt",
+        "duration_ms": 5581.349291998777
+      },
+      {
+        "role": "fast",
+        "stage": "draft",
+        "text": "323",
+        "model": null,
+        "requested_model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "usage": {
+          "input_tokens": 19894,
+          "output_tokens": 5,
+          "input_tokens_details": {
+            "cached_tokens": 11008
+          }
+        },
+        "codex_usage": {
+          "input_tokens": 19894,
+          "cached_input_tokens": 11008,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        },
+        "cost_usd": null,
+        "auth": "chatgpt",
+        "duration_ms": 7057.729540996661
+      },
+      {
+        "role": "strong",
+        "stage": "review",
+        "text": "{\"status\":\"accepted\",\"answer\":\"323\",\"reason\":\"17 × 19 = 340 − 17 = 323.\"}",
+        "model": null,
+        "requested_model": "gpt-6-astra",
+        "reasoning_effort": "high",
+        "usage": {
+          "input_tokens": 16054,
+          "output_tokens": 71,
+          "input_tokens_details": {
+            "cached_tokens": 0
+          }
+        },
+        "codex_usage": {
+          "input_tokens": 16054,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 71,
+          "reasoning_output_tokens": 33
+        },
+        "cost_usd": null,
+        "auth": "chatgpt",
+        "duration_ms": 7362.690959002066
+      }
+    ],
+    "first_answer_ms": 7057.787166995695,
+    "final_ms": 14420.623833997524,
+    "cost_usd": null,
+    "grade": {
+      "final_correct": true,
+      "draft_correct": true,
+      "regression": false,
+      "repair": false
+    }
+  }
+}
