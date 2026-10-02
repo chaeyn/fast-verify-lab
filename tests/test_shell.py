@@ -74,7 +74,9 @@ class ShellLauncherTests(unittest.TestCase):
         (self.caller / 'config.local.json').write_text('{}', encoding='utf-8')
         self.log = self.folder / 'calls.jsonl'
         self.interpreter = self.folder / 'Python fixture'
-        self.interpreter.write_text(f'#!{sys.executable}\n' + FAKE_PYTHON, encoding='utf-8')
+        # Exclude the test runner's site-packages. CI installs the real app there,
+        # but the fixture must expose it only after its own pip install succeeds.
+        self.interpreter.write_text(f'#!{sys.executable} -S\n' + FAKE_PYTHON, encoding='utf-8')
         self.interpreter.chmod(0o755)
         packages = self.folder / 'packages'
         (packages / 'fast_verify_lab').mkdir(parents=True)
