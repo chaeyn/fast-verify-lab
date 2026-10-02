@@ -102,7 +102,9 @@ The maintainer prepares a versioned GitHub release. The project does not require
 3. Wait for required CI jobs on the release commit.
 4. Build the wheel and source archive from that commit.
 5. Create a tag that matches the package version.
-6. Attach the artifacts and checksums to the GitHub release.
-7. Record test coverage and remaining provider limits in the release notes.
+6. Run `python scripts/prepare_release.py dist` to add `install-release.sh` and `SHA256SUMS`.
+7. Attach the wheel, source archive, installer, and checksums to the GitHub release.
+8. Test the public installer URL from an empty directory with temporary installation paths.
+9. Record test coverage and remaining provider limits in the release notes.
 
 A release tag identifies the code. A green CI run identifies the checks that passed for that code. Neither proves model accuracy or access to an external account.

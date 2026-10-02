@@ -20,32 +20,32 @@ Use Python 3.11 or later. The mock demo needs no account, API key, or external m
 
 ### macOS, Linux, or WSL
 
+Install the latest GitHub release:
+
 ```sh
-git clone https://github.com/chaeyn/fast-verify-lab.git
-cd fast-verify-lab
-sh install.sh
-sh run.sh
+curl -fsSL https://github.com/chaeyn/fast-verify-lab/releases/latest/download/install-release.sh | sh
+"$HOME/.local/bin/fast-verify"
 ```
 
-The installer creates or reuses `.venv`. You do not need to activate it.
-`sh run.sh` opens the TUI and installs the app if needed.
-Use `sh run.sh demo` to try an offline sample.
+The installer creates a local virtual environment and a launcher. The launcher opens the TUI when you supply no command. It does not need a source checkout.
 
-For the commands below, replace `fast-verify` with `sh run.sh` when you use this launcher.
-See the [shell guide](GUIDE.md#shell-installation-and-launch) for options and updates.
+Use `"$HOME/.local/bin/fast-verify" demo` for an offline sample. If `~/.local/bin` is on your PATH, you can use `fast-verify` directly.
+
+The installer verifies the release wheel with its SHA-256 checksum. It does not use sudo or change shell profiles. See the [installation guide](GUIDE.md#release-installation) to inspect the script, change paths, or update.
 
 ### Windows PowerShell
 
+Install the release wheel in a virtual environment:
+
 ```powershell
-git clone https://github.com/chaeyn/fast-verify-lab.git
-cd fast-verify-lab
-py -3 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install ".[tui]"
-.\.venv\Scripts\fast-verify.exe demo
-.\.venv\Scripts\fast-verify.exe tui --provider mock
+py -3 -m venv "$env:LOCALAPPDATA\fast-verify-lab\venv"
+& "$env:LOCALAPPDATA\fast-verify-lab\venv\Scripts\python.exe" -m pip install "fast-verify-lab[tui] @ https://github.com/chaeyn/fast-verify-lab/releases/download/v0.1.2/fast_verify_lab-0.1.2-py3-none-any.whl"
+& "$env:LOCALAPPDATA\fast-verify-lab\venv\Scripts\fast-verify.exe" tui
 ```
 
 The `tui` extra installs `windows-curses` on Windows. The text CLI has no runtime package dependencies. See the [environment support table](docs/support.md) for test limits.
+
+To change the source, use the [source installation steps](GUIDE.md#source-installation-and-launch) and [contributor guide](CONTRIBUTING.md).
 
 ## Connect a model
 
@@ -56,7 +56,7 @@ The `tui` extra installs `windows-curses` on Windows. The text CLI has no runtim
 5. Run `fast-verify doctor`.
 6. Run `fast-verify tui`.
 
-On Windows, use `.\.venv\Scripts\fast-verify.exe` in place of `fast-verify` if the virtual environment is not active.
+If the launcher is not on your PATH, use its full path for the commands below. On Windows, use `& "$env:LOCALAPPDATA\fast-verify-lab\venv\Scripts\fast-verify.exe"`.
 
 | Connection | Authentication | Provider ID |
 |---|---|---|

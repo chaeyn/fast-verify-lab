@@ -1,5 +1,15 @@
 # Change log
 
+## 0.1.2 - 2026-10-02
+
+- Add a standalone installer for GitHub release wheels on macOS, Linux, and WSL.
+- Check the downloaded wheel against the release's SHA-256 checksum.
+- Create a user virtual environment and a launcher that opens the TUI by default.
+- Support custom installation directories and Python selection.
+- Preserve config and result files when updating the installed release.
+- Make release installation the default path in English and Korean introductions.
+- Add a Windows wheel installation procedure that does not need a source checkout.
+
 ## 0.1.1 - 2026-10-02
 
 - Add `sh install.sh` to create or reuse a local virtual environment.

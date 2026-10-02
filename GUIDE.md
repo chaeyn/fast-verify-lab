@@ -6,34 +6,89 @@ Fast Verify Lab shows a draft before the review finishes. The reviewer can keep 
 
 ## Install
 
-Use Python 3.11 or later. Follow the [installation steps](README.md#try-it) for your operating system. Use the shell launcher or run commands inside a virtual environment.
+Use Python 3.11 or later. Follow the [installation steps](README.md#try-it) for your operating system. The default installation downloads a GitHub release. Git is not required.
 
-With the shell launcher, replace `fast-verify` in this guide with `sh run.sh`.
+For the shell installation, use `"$HOME/.local/bin/fast-verify"` when the launcher directory is not on your PATH. Use the full Windows path shown in the README for PowerShell commands.
 
-Use `python -m fast_verify_lab` if the `fast-verify` command is not on your PATH. Both commands provide the same interface.
+With a source checkout, replace `fast-verify` in this guide with `sh run.sh`. With an active virtual environment, `python -m fast_verify_lab` provides the same app commands.
+
+## Release installation
+
+Use the release installer on macOS, Linux, or WSL. Use the PowerShell wheel instructions on native Windows.
+
+Install Python 3.11 or later with venv and HTTPS support before you run the script. The download command also needs `curl`. Installation needs network access to GitHub.
 
 ```sh
-python -m fast_verify_lab --help
-fast-verify --help
+curl -fsSL https://github.com/chaeyn/fast-verify-lab/releases/latest/download/install-release.sh | sh
+"$HOME/.local/bin/fast-verify"
 ```
 
-Install from the GitHub source or a GitHub release artifact. This guide does not require a PyPI publication.
+The release script selects a fixed release version. It downloads that release's wheel and `SHA256SUMS`. It checks the wheel hash before installation.
 
-To update a source checkout:
+The installer creates or reuses a virtual environment at `~/.local/share/fast-verify-lab/venv`. It writes the launcher to `~/.local/bin/fast-verify`. It does not need sudo or change shell profiles.
 
-1. Save your local code changes.
-2. Pull the version that you want to use.
-3. Run `sh install.sh` again if you use the shell launcher. Otherwise, run `python -m pip install '.[tui]'`.
-4. Run `sh run.sh doctor` or `fast-verify doctor`.
+The launcher opens the TUI when you supply no command. It also accepts each app command:
 
-## Shell installation and launch
+```sh
+"$HOME/.local/bin/fast-verify" demo
+"$HOME/.local/bin/fast-verify" setup
+"$HOME/.local/bin/fast-verify" doctor
+"$HOME/.local/bin/fast-verify" ask "What is 17 times 19?" --no-save
+```
+
+If `~/.local/bin` is on your PATH, use `fast-verify` in place of the full launcher path.
+
+### Inspect the script before installation
+
+Download the script to a file:
+
+```sh
+curl -fsSL https://github.com/chaeyn/fast-verify-lab/releases/latest/download/install-release.sh -o install-release.sh
+```
+
+Read `install-release.sh` in your text editor. Then run it:
+
+```sh
+sh install-release.sh
+```
+
+### Change installation paths
+
+Both directory overrides must be absolute paths. Set them when you run the saved script:
+
+```sh
+FAST_VERIFY_INSTALL_DIR="$HOME/apps/fast-verify-lab" \
+FAST_VERIFY_BIN_DIR="$HOME/bin" \
+FAST_VERIFY_PYTHON=python3.12 \
+sh install-release.sh
+```
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `FAST_VERIFY_INSTALL_DIR` | Directory that contains the virtual environment | `~/.local/share/fast-verify-lab` |
+| `FAST_VERIFY_BIN_DIR` | Directory for the launcher | `~/.local/bin` |
+| `FAST_VERIFY_PYTHON` | Python executable used to create the environment | An available Python 3.11 or later |
+
+`FAST_VERIFY_PYTHON` accepts an executable name or a full path. The script leaves configuration and result files in their existing [user locations](docs/configuration.md#file-locations).
+
+### Update
+
+Run the download and installation command again to install the latest release. Use the same directory overrides if you changed the installation paths.
+
+An old saved script keeps its pinned release version. Download the latest script before an update. Configuration and result files remain in place.
+
+For Windows, install the new wheel URL with the virtual environment's Python. Keep the `fast-verify-lab[tui] @ URL` form to include terminal support.
+
+## Source installation and launch
 
 Use these scripts on macOS, Linux, or WSL. Use the PowerShell instructions on native Windows.
 Install Python 3.11 or later before the first run. Installation needs network access for build dependencies.
 
-From the source checkout:
+Clone the repository when you need a source checkout:
 
 ```sh
+git clone https://github.com/chaeyn/fast-verify-lab.git
+cd fast-verify-lab
 sh install.sh
 sh run.sh
 ```
@@ -309,8 +364,12 @@ fast-verify ask "What is 17 times 19?" --no-save
 
 | Symptom | Action |
 |---|---|
-| `fast-verify` is not found | Activate the virtual environment, or use `python -m fast_verify_lab` |
-| Python version error | Install Python 3.11 or later and recreate the virtual environment |
+| `fast-verify` is not found | Use the full launcher path, such as `"$HOME/.local/bin/fast-verify"` |
+| Python version error | Install Python 3.11 or later, or select it with `FAST_VERIFY_PYTHON` |
+| Release wheel checksum mismatch | Stop installation. Download the current script again and check the release assets |
+| Install directory contains unrelated files | Select an empty absolute path with `FAST_VERIFY_INSTALL_DIR` |
+| Launcher belongs to another installation | Select another absolute directory with `FAST_VERIFY_BIN_DIR` |
+| Python cannot create a virtual environment | Install your system's venv support, then retry the installer |
 | Missing curses on Windows | Install the `tui` extra with the same Python environment |
 | TUI requires an interactive terminal | Open a terminal, or use `fast-verify ask` |
 | Terminal is too small | Resize to at least 40 columns and 12 rows |

@@ -20,32 +20,32 @@ Python 3.11 이상을 사용하세요. 모의 실행에는 계정이나 API 키�
 
 ### macOS, Linux, WSL
 
+최신 GitHub 릴리스를 설치하세요.
+
 ```sh
-git clone https://github.com/chaeyn/fast-verify-lab.git
-cd fast-verify-lab
-sh install.sh
-sh run.sh
+curl -fsSL https://github.com/chaeyn/fast-verify-lab/releases/latest/download/install-release.sh | sh
+"$HOME/.local/bin/fast-verify"
 ```
 
-설치 스크립트는 `.venv`를 만들거나 기존 환경을 재사용합니다. 가상 환경을 직접 활성화할 필요가 없습니다.
-`sh run.sh`는 TUI를 실행합니다. 앱이 없으면 먼저 설치합니다.
-모의 실행은 `sh run.sh demo`로 시작하세요.
+설치 스크립트는 전용 가상 환경과 실행 명령을 만듭니다. 명령에 인수가 없으면 TUI를 엽니다. 저장소를 복제할 필요가 없습니다.
 
-아래 예제에서는 `fast-verify` 대신 `sh run.sh`를 사용하세요.
-설정과 업데이트 방법은 [셸 스크립트 가이드](GUIDE.md#shell-installation-and-launch)를 확인하세요.
+모의 실행은 `"$HOME/.local/bin/fast-verify" demo`로 시작하세요. `~/.local/bin`이 PATH에 있으면 `fast-verify`를 사용할 수 있습니다.
+
+설치 스크립트는 SHA-256 체크섬으로 릴리스 파일을 확인합니다. sudo를 사용하거나 셸 설정 파일을 바꾸지 않습니다. 스크립트 확인, 설치 경로, 업데이트 방법은 [설치 가이드](GUIDE.md#release-installation)를 참고하세요.
 
 ### Windows PowerShell
 
+릴리스 파일을 가상 환경에 설치하세요.
+
 ```powershell
-git clone https://github.com/chaeyn/fast-verify-lab.git
-cd fast-verify-lab
-py -3 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install ".[tui]"
-.\.venv\Scripts\fast-verify.exe demo
-.\.venv\Scripts\fast-verify.exe tui --provider mock
+py -3 -m venv "$env:LOCALAPPDATA\fast-verify-lab\venv"
+& "$env:LOCALAPPDATA\fast-verify-lab\venv\Scripts\python.exe" -m pip install "fast-verify-lab[tui] @ https://github.com/chaeyn/fast-verify-lab/releases/download/v0.1.2/fast_verify_lab-0.1.2-py3-none-any.whl"
+& "$env:LOCALAPPDATA\fast-verify-lab\venv\Scripts\fast-verify.exe" tui
 ```
 
 Windows에서는 `tui` 추가 옵션이 `windows-curses`를 설치합니다. 텍스트 CLI에는 실행용 외부 패키지가 필요하지 않습니다. 운영체제별 검증 범위는 [지원 환경](docs/support.md)에서 확인하세요.
+
+소스를 수정하려면 [소스 설치 절차](GUIDE.md#source-installation-and-launch)와 [기여 가이드](CONTRIBUTING.md)를 확인하세요.
 
 ## 모델 연결
 
@@ -57,7 +57,7 @@ Windows에서는 `tui` 추가 옵션이 `windows-curses`를 설치합니다. 텍
 6. `fast-verify doctor`를 실행하세요.
 7. `fast-verify tui`를 실행하세요.
 
-Windows에서 가상 환경을 활성화하지 않았다면 `fast-verify` 대신 `.\.venv\Scripts\fast-verify.exe`를 사용하세요.
+실행 명령이 PATH에 없으면 아래 예제에서 전체 경로를 사용하세요. Windows에서는 `& "$env:LOCALAPPDATA\fast-verify-lab\venv\Scripts\fast-verify.exe"`를 사용하세요.
 
 | 연결 | 인증 | 설정 ID |
 |---|---|---|

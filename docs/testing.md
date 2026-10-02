@@ -37,14 +37,15 @@ The documentation checker does not assess formal ASD-STE100 compliance. It does 
 
 ```sh
 python -m build
-python -m twine check dist/*
+python -m twine check dist/*.whl dist/*.tar.gz
+python scripts/prepare_release.py dist
 ```
 
 Install the built wheel into a clean virtual environment. Run the smoke script with that environment's Python:
 
 ```sh
 python3 -m venv /tmp/fast-verify-wheel-test
-/tmp/fast-verify-wheel-test/bin/python -m pip install dist/fast_verify_lab-0.1.1-py3-none-any.whl
+/tmp/fast-verify-wheel-test/bin/python -m pip install dist/fast_verify_lab-0.1.2-py3-none-any.whl
 /tmp/fast-verify-wheel-test/bin/python scripts/smoke_install.py
 ```
 
@@ -52,11 +53,27 @@ Use a fresh temporary path if the example path already contains work. Use the cu
 
 The smoke script changes to an empty directory. It checks the installed module entry point, bundled cases, offline demo, and benchmark output. This catches accidental dependencies on the source checkout.
 
+## Test the release installer
+
+Build the release wheel first. Then run the installer smoke test:
+
+```sh
+python scripts/smoke_release_install.py dist/fast_verify_lab-0.1.2-py3-none-any.whl
+```
+
+The smoke test serves the wheel and `SHA256SUMS` from a local HTTP server. It changes the release URL in a temporary installer copy.
+
+It checks installation from a saved script and a script piped to `sh`. It runs the installed demo and JSON question command outside the checkout. The commands use mock responses and create no saved question record.
+
+This test needs no Git checkout at the installation destination, model credentials, or paid calls. It verifies the local release flow. A published GitHub download needs a separate check after release publication.
+
+The unit suite also tests installer behavior with a small fixture wheel, temporary virtual environments, and pip. See the test output for passed and skipped cases.
+
 ## CI
 
 The [CI workflow](../.github/workflows/ci.yml) runs on Ubuntu, macOS, and Windows. Its Python matrix contains 3.11 through 3.14.
 
-Separate jobs build release files and test a container's offline demo. No CI job requires a model account.
+Separate jobs build release files and test a container's offline demo. POSIX jobs also check the shell installation paths. No CI job requires a model account.
 
 Inspect the [run for your commit](https://github.com/chaeyn/fast-verify-lab/actions/workflows/ci.yml). Report failed or skipped checks separately. Do not describe a configured job as a passing test.
 
