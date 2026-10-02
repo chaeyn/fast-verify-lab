@@ -49,6 +49,13 @@ jobs:
           sh run.sh ask --provider mock --case multiply --json --no-save
       - name: Test installed commands outside the checkout
         run: python scripts/smoke_install.py
+      - name: Test release installer without a source checkout
+        if: runner.os != 'Windows'
+        shell: sh
+        run: |
+          sh -n install-release.sh
+          python -m pip wheel --no-deps --wheel-dir shell-dist .
+          python scripts/smoke_release_install.py shell-dist/fast_verify_lab-0.1.2-py3-none-any.whl
 
   build:
     name: Build release files
@@ -60,7 +67,9 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install build twine
       - run: python -m build
-      - run: python -m twine check dist/*
+      - run: python -m twine check dist/*.whl dist/*.tar.gz
+      - name: Include standalone installer and checksums
+        run: python scripts/prepare_release.py dist
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: distributions

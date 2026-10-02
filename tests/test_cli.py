@@ -120,7 +120,7 @@ class AskTests(unittest.TestCase):
                   f'runpy.run_path({str(ROOT/"cli.py")!r},run_name="__main__")\n')
         result = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, timeout=10)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('0.1.1', result.stdout)
+        self.assertIn('0.1.2', result.stdout)
 
     def test_model_control_characters_do_not_reach_terminal(self):
         output = io.StringIO()
