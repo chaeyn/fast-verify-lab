@@ -36,6 +36,17 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Check documentation links
         run: python scripts/check_docs.py
+      - name: Test shell installation and launch
+        if: runner.os != 'Windows'
+        shell: sh
+        env:
+          FAST_VERIFY_VENV: .venv-shell-ci
+        run: |
+          sh -n install.sh
+          sh -n run.sh
+          sh install.sh
+          sh run.sh demo
+          sh run.sh ask --provider mock --case multiply --json --no-save
       - name: Test installed commands outside the checkout
         run: python scripts/smoke_install.py
 

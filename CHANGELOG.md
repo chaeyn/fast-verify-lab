@@ -1,5 +1,13 @@
 # Change log
 
+## 0.1.1 - 2026-10-02
+
+- Add `sh install.sh` to create or reuse a local virtual environment.
+- Add `sh run.sh` to install the app when needed and launch the TUI or a CLI command.
+- Preserve command arguments, the working directory, and JSON output through the launcher.
+- Include both scripts in the source archive.
+- Test shell behavior and real installation on macOS and Linux in CI.
+
 ## 0.1.0 - 2026-10-02
 
 First packaged GitHub release.

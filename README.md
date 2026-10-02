@@ -23,12 +23,16 @@ Use Python 3.11 or later. The mock demo needs no account, API key, or external m
 ```sh
 git clone https://github.com/chaeyn/fast-verify-lab.git
 cd fast-verify-lab
-python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install '.[tui]'
-fast-verify demo
-fast-verify tui --provider mock
+sh install.sh
+sh run.sh
 ```
+
+The installer creates or reuses `.venv`. You do not need to activate it.
+`sh run.sh` opens the TUI and installs the app if needed.
+Use `sh run.sh demo` to try an offline sample.
+
+For the commands below, replace `fast-verify` with `sh run.sh` when you use this launcher.
+See the [shell guide](GUIDE.md#shell-installation-and-launch) for options and updates.
 
 ### Windows PowerShell
 

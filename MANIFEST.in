@@ -1,4 +1,4 @@
-include *.md Dockerfile .dockerignore
+include *.md *.sh Dockerfile .dockerignore
 include config.codex.json config.claude.json config.example.json config.api.json config.anthropic.json
 include data/cases.jsonl
 recursive-include docs *.md

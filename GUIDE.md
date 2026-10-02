@@ -6,7 +6,9 @@ Fast Verify Lab shows a draft before the review finishes. The reviewer can keep 
 
 ## Install
 
-Use Python 3.11 or later. Follow the [installation steps](README.md#try-it) for your operating system. Run commands inside the virtual environment.
+Use Python 3.11 or later. Follow the [installation steps](README.md#try-it) for your operating system. Use the shell launcher or run commands inside a virtual environment.
+
+With the shell launcher, replace `fast-verify` in this guide with `sh run.sh`.
 
 Use `python -m fast_verify_lab` if the `fast-verify` command is not on your PATH. Both commands provide the same interface.
 
@@ -21,8 +23,54 @@ To update a source checkout:
 
 1. Save your local code changes.
 2. Pull the version that you want to use.
-3. Run `python -m pip install '.[tui]'` again.
-4. Run `fast-verify doctor`.
+3. Run `sh install.sh` again if you use the shell launcher. Otherwise, run `python -m pip install '.[tui]'`.
+4. Run `sh run.sh doctor` or `fast-verify doctor`.
+
+## Shell installation and launch
+
+Use these scripts on macOS, Linux, or WSL. Use the PowerShell instructions on native Windows.
+Install Python 3.11 or later before the first run. Installation needs network access for build dependencies.
+
+From the source checkout:
+
+```sh
+sh install.sh
+sh run.sh
+```
+
+`install.sh` installs the app into `.venv` beside the scripts. It reuses a valid environment.
+`run.sh` installs the app if the environment or package is missing. It opens the TUI when you supply no arguments.
+Later runs reuse the installed package. They do not contact a package index unless installation is needed.
+
+Use any app command through the launcher:
+
+```sh
+sh run.sh demo
+sh run.sh setup
+sh run.sh doctor
+sh run.sh tui --provider mock
+sh run.sh ask "What is 17 times 19?" --json --no-save
+```
+
+The launcher preserves the current directory and each argument. Relative config paths use the current directory.
+Install messages go to stderr. JSON events stay on stdout.
+
+Use these variables to select Python or the environment:
+
+```sh
+FAST_VERIFY_PYTHON=python3.12 sh install.sh
+FAST_VERIFY_VENV=.venv-custom sh run.sh demo
+```
+
+`FAST_VERIFY_PYTHON` selects the executable when creating an environment. It can contain an executable name or a full path.
+`FAST_VERIFY_VENV` selects the environment for both scripts. Relative environment paths use the source checkout directory.
+Use the same value for installation and later runs.
+
+After a source update, run `sh install.sh` again. A normal launch does not reinstall changed source files.
+For an incomplete or old environment, select a new path with `FAST_VERIFY_VENV`.
+The installer leaves existing files in place.
+
+Use `sh install.sh --help` or `sh run.sh --help` for script options. Use `sh run.sh ask --help` for app options.
 
 ## Use a container
 

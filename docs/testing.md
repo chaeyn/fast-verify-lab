@@ -44,7 +44,7 @@ Install the built wheel into a clean virtual environment. Run the smoke script w
 
 ```sh
 python3 -m venv /tmp/fast-verify-wheel-test
-/tmp/fast-verify-wheel-test/bin/python -m pip install dist/fast_verify_lab-0.1.0-py3-none-any.whl
+/tmp/fast-verify-wheel-test/bin/python -m pip install dist/fast_verify_lab-0.1.1-py3-none-any.whl
 /tmp/fast-verify-wheel-test/bin/python scripts/smoke_install.py
 ```
 

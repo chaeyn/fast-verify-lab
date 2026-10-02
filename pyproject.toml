@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fast-verify-lab"
-version = "0.1.0"
+version = "0.1.1"
 description = "Show a fast model answer, then check it with a second model."
 readme = "README.md"
 requires-python = ">=3.11"

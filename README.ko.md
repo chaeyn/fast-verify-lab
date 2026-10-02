@@ -23,12 +23,16 @@ Python 3.11 이상을 사용하세요. 모의 실행에는 계정이나 API 키�
 ```sh
 git clone https://github.com/chaeyn/fast-verify-lab.git
 cd fast-verify-lab
-python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install '.[tui]'
-fast-verify demo
-fast-verify tui --provider mock
+sh install.sh
+sh run.sh
 ```
+
+설치 스크립트는 `.venv`를 만들거나 기존 환경을 재사용합니다. 가상 환경을 직접 활성화할 필요가 없습니다.
+`sh run.sh`는 TUI를 실행합니다. 앱이 없으면 먼저 설치합니다.
+모의 실행은 `sh run.sh demo`로 시작하세요.
+
+아래 예제에서는 `fast-verify` 대신 `sh run.sh`를 사용하세요.
+설정과 업데이트 방법은 [셸 스크립트 가이드](GUIDE.md#shell-installation-and-launch)를 확인하세요.
 
 ### Windows PowerShell
 
