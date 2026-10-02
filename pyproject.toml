@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fast-verify-lab"
+version = "0.1.0"
+description = "Show a fast model answer, then check it with a second model."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{name = "chaeyn"}]
+keywords = ["llm", "verification", "codex", "claude", "terminal"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+
+[project.optional-dependencies]
+tui = ["windows-curses>=2.4; sys_platform == 'win32'"]
+dev = ["build>=1.2", "twine>=6"]
+
+[project.scripts]
+fast-verify = "fast_verify_lab.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/chaeyn/fast-verify-lab"
+Repository = "https://github.com/chaeyn/fast-verify-lab"
+Issues = "https://github.com/chaeyn/fast-verify-lab/issues"
+
+[tool.setuptools]
+packages = ["fast_verify_lab"]
+package-dir = {fast_verify_lab = "."}
+include-package-data = false
+
+[tool.setuptools.package-data]
+fast_verify_lab = ["config.codex.json", "config.claude.json", "config.example.json", "config.api.json", "config.anthropic.json", "data/cases.jsonl"]

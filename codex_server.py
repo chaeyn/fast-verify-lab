@@ -4,11 +4,26 @@ import json
 import os
 from pathlib import Path
 import shutil
-import signal
 import errno
 import tempfile
 import threading
 import time
+
+if __package__:
+    from .process_utils import process_options, stop_process_tree
+else:
+    from process_utils import process_options, stop_process_tree
+
+
+def preferred_transport(config):
+    """Use native CLI auth when an isolated credential link is unavailable."""
+    transport = config.get('transport', 'app-server')
+    if transport not in ('app-server', 'exec'):
+        raise ValueError('Set transport to app-server or exec')
+    if transport == 'exec' or os.name == 'nt':
+        return 'exec'
+    root = Path(os.environ.get('CODEX_HOME', str(Path.home() / '.codex')))
+    return 'app-server' if (root / 'auth.json').is_file() else 'exec'
 
 
 class AppServerClient:
@@ -25,6 +40,9 @@ class AppServerClient:
         async with self.start_lock:
             if self.process and self.process.returncode is None:
                 return 0.0
+            # A crashed server can leave its reader and temporary directory.
+            if self.process or self.folder:
+                await self.close()
             started = time.perf_counter()
             binary = shutil.which('codex')
             if not binary:
@@ -34,22 +52,25 @@ class AppServerClient:
             if not credential.is_file():
                 raise ValueError('App Server needs file-based Codex login. Use transport=exec for keyring-only login.')
             self.folder = tempfile.TemporaryDirectory(prefix='fast-verify-server-')
-            home = Path(self.folder.name) / 'codex-home'
-            home.mkdir()
-            # Link the native credential file; never read, copy, or log its contents.
-            (home / 'auth.json').symlink_to(credential.resolve())
-            env = os.environ.copy()
-            for key in ('OPENAI_API_KEY', 'CODEX_API_KEY', 'CODEX_ACCESS_TOKEN'):
-                env.pop(key, None)
-            env['CODEX_HOME'] = str(home)
-            self.process = await asyncio.create_subprocess_exec(binary, 'app-server', '--stdio',
-                '-c', 'project_doc_max_bytes=0', '-c', 'features.shell_tool=false',
-                '-c', 'web_search="disabled"', '-c', 'forced_login_method="chatgpt"',
-                stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.DEVNULL, cwd=self.folder.name, env=env, start_new_session=True)
-            self.reader = asyncio.create_task(self.read())
             try:
-                await self.request('initialize', {'clientInfo': {'name': 'fast_verify_lab', 'version': '0.2.0'},
+                home = Path(self.folder.name) / 'codex-home'
+                home.mkdir()
+                try:
+                    # Link the native credential file; never read or copy it.
+                    (home / 'auth.json').symlink_to(credential.resolve())
+                except OSError:
+                    raise ValueError('Cannot link Codex login. Set transport to exec in your config.') from None
+                env = os.environ.copy()
+                for key in ('OPENAI_API_KEY', 'CODEX_API_KEY', 'CODEX_ACCESS_TOKEN'):
+                    env.pop(key, None)
+                env['CODEX_HOME'] = str(home)
+                self.process = await asyncio.create_subprocess_exec(binary, 'app-server', '--stdio',
+                    '-c', 'project_doc_max_bytes=0', '-c', 'features.shell_tool=false',
+                    '-c', 'web_search="disabled"', '-c', 'forced_login_method="chatgpt"',
+                    stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.DEVNULL, cwd=self.folder.name, env=env, **process_options())
+                self.reader = asyncio.create_task(self.read())
+                await self.request('initialize', {'clientInfo': {'name': 'fast_verify_lab', 'version': '0.1.0'},
                     'capabilities': {'experimentalApi': True}})
                 await self.send({'method': 'initialized', 'params': {}})
                 account = await self.request('account/read', {'refreshToken': False})
@@ -93,7 +114,7 @@ class AppServerClient:
                     thread_id = message.get('params', {}).get('threadId')
                     if thread_id in self.notifications:
                         self.notifications[thread_id].put_nowait(message)
-        except (ValueError, OSError):
+        except (ValueError, OSError, KeyError, TypeError, AttributeError):
             pass
         finally:
             for future in list(self.pending.values()):
@@ -104,11 +125,7 @@ class AppServerClient:
 
     async def close(self):
         if self.process:
-            try:
-                os.killpg(self.process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-            await self.process.wait()
+            await stop_process_tree(self.process)
         if self.reader:
             self.reader.cancel()
             await asyncio.gather(self.reader, return_exceptions=True)
@@ -125,7 +142,10 @@ class AppServerClient:
         self.notifications.clear()
 
     async def generate(self, spec, stage, question, draft, independent, on_delta):
-        from lab import REVIEW, SOLVE
+        if __package__:
+            from .lab import REVIEW, SOLVE
+        else:
+            from lab import REVIEW, SOLVE
         started = time.perf_counter()
         startup_ms = await self.start()
         tier = {'standard': 'default', 'fast': 'priority'}.get(spec.get('service_tier'), spec.get('service_tier'))
@@ -178,7 +198,11 @@ class AppServerClient:
                             raise RuntimeError('App Server did not complete with an answer')
                         break
         except BaseException:
-            if turn_id and self.process and self.process.returncode is None:
+            if not turn_id:
+                # Cancellation before turn/start returns has no turn ID to
+                # interrupt. Stop the server so a hidden turn cannot continue.
+                await self.close()
+            elif self.process and self.process.returncode is None:
                 try:
                     await asyncio.wait_for(self.request('turn/interrupt', {'threadId': thread_id, 'turnId': turn_id}), 2)
                 except Exception:

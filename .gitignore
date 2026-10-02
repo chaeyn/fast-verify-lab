@@ -5,3 +5,9 @@ __pycache__/
 results/
 .DS_Store
 config.local.json
+.venv-*/
+build/
+dist/
+*.egg-info/
+.coverage
+htmlcov/

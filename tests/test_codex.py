@@ -97,9 +97,14 @@ class InvocationTests(unittest.IsolatedAsyncioTestCase):
                 self.killed = True
                 self.returncode = -9
         process = Process()
+        async def stop(target):
+            self.assertIs(target, process)
+            target.kill()
         config = dict(CONFIG, timeout_seconds=.01)
         with patch('lab.shutil.which', return_value='/fake/codex'), \
-             patch('lab.asyncio.create_subprocess_exec', return_value=process):
+             patch('lab.asyncio.create_subprocess_exec', return_value=process), \
+             patch('lab.stop_process_tree', side_effect=stop) as cleanup:
             with self.assertRaises(TimeoutError):
                 await CodexProvider(config).generate('fast', 'draft', 'Q')
         self.assertTrue(process.killed)
+        cleanup.assert_awaited_once_with(process)

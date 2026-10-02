@@ -1,7 +1,10 @@
 """Interactive terminal UI for Fast Verify Lab; uses the Python standard library."""
 import argparse
 import asyncio
-import curses
+try:
+    import curses
+except ImportError:
+    curses = None
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -11,10 +14,16 @@ import threading
 import time
 import unicodedata
 
-from lab import MODES, grade, make_provider, run
-
-ROOT = Path(__file__).resolve().parent
-from providers import PROVIDERS, load_config
+if __package__:
+    from .lab import MODES, grade, make_provider, run
+    from .providers import PROVIDERS, load_config
+    from .paths import ROOT, cases_path, config_path, user_results_dir
+    from .configure import wizard
+else:
+    from lab import MODES, grade, make_provider, run
+    from providers import PROVIDERS, load_config
+    from paths import ROOT, cases_path, config_path, user_results_dir
+    from configure import wizard
 
 BANNER = (
     r" ____    _    ____ _____  __     _______ ____  ___ _____ __   __",
@@ -88,7 +97,7 @@ class Worker:
 class Session:
     def __init__(self, args):
         self.args = args
-        self.cases = [json.loads(line) for line in Path(args.cases).read_text().splitlines() if line.strip()]
+        self.cases = [json.loads(line) for line in Path(args.cases).read_text(encoding='utf-8').splitlines() if line.strip()]
         if not self.cases:
             raise ValueError('No cases found')
         self.index, self.custom = 0, None
@@ -174,7 +183,7 @@ class Session:
             path = folder / name
             payload = {'provider': self.provider, 'mode': self.mode, 'question': self.case['question'],
                        'custom_question': self.custom is not None, 'result': self.result}
-            path.write_text(json.dumps(payload, ensure_ascii=False, indent=2))
+            path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
             self.saved = str(path.resolve())
         except OSError:
             self.message += ' Could not save the result file.'
@@ -275,8 +284,8 @@ class Session:
                 'corrected: reviewer changed it; correction shown below',
                 'uncertain: reviewer could not resolve the answer',
                 'failed review: draft stays unverified', '',
-                'Configure both connections: python3 setup.py',
-                'Check installation and login: python3 setup.py --doctor',
+                'Configure both connections: fast-verify setup',
+                'Check installation and login: fast-verify doctor',
                 'Results include prompts and answers. Use --no-save to disable.',
                 'See GUIDE.md for setup, billing and troubleshooting.', '',
                 'PgUp/PgDn to scroll; any other key closes help.') for part in wrap(line, columns)]
@@ -304,7 +313,7 @@ class Session:
             error = next((e for e in reversed(self.events) if e['event'] == 'error'), {})
             if error.get('error_message'):
                 section('CONNECTION ERROR', error['error_message'])
-            section('RECOVERY', 'Check login and model access with python3 setup.py --doctor.\nAPI: check your key, base URL and model IDs in config.\nEdit the question with e, or press Enter to retry.')
+            section('RECOVERY', 'Check login and model access with fast-verify doctor.\nAPI: check your key, base URL and model IDs in config.\nEdit the question with e, or press Enter to retry.')
         if self.result and self.result.get('calls'):
             result = self.result
             first = result.get('first_answer_ms')
@@ -352,7 +361,7 @@ def draw(screen, session):
         roles = [f"{config[r].get('provider', session.provider)}/{config[r]['model']}" for r in ('fast', 'strong')]
         connection = ' -> '.join(roles)
     except (OSError, ValueError, KeyError):
-        connection = 'Run python3 setup.py to configure connections'
+        connection = 'Run fast-verify setup to configure connections'
     put(header_rows + 2, connection, curses.A_DIM)
     content_top = header_rows + 3
     lines = session.content(columns - 3)
@@ -388,6 +397,9 @@ def application(screen, session):
                 key = screen.get_wch()
             except curses.error:
                 continue
+            rows, columns = screen.getmaxyx()
+            if (rows < 12 or columns < 40) and key == 'q':
+                break
             action = session.key(key)
             if action == 'setup':
                 return 'setup'
@@ -403,28 +415,30 @@ def application(screen, session):
                 provider.close()
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--provider', choices=PROVIDERS, default=None)
     parser.add_argument('--mode', choices=MODES, default='sequential')
     parser.add_argument('--config')
     parser.add_argument('--setup', action='store_true', help='Configure draft and review connections')
     parser.add_argument('--no-save', action='store_true', help='Do not save questions or answers locally')
-    parser.add_argument('--cases', default=str(ROOT / 'data/cases.jsonl'))
-    parser.add_argument('--output', default=str(ROOT / 'results'))
-    args = parser.parse_args()
+    parser.add_argument('--cases', default=str(cases_path()))
+    parser.add_argument('--output', default=str(user_results_dir()))
+    args = parser.parse_args(argv)
+    if curses is None:
+        parser.exit(2, 'TUI support is missing. On Windows, run python -m pip install windows-curses. On Unix, use Python with curses. You can use fast-verify ask without curses.\n')
     if not sys.stdin.isatty() or not sys.stdout.isatty():
-        parser.exit(2, 'TUI requires an interactive terminal. Run python3 tui.py in a terminal.\n')
+        parser.exit(2, 'TUI requires an interactive terminal. Run fast-verify tui in a terminal.\n')
     try:
-        if args.setup or (args.provider is None and not args.config and not (ROOT / 'config.local.json').exists()):
-            from setup import wizard
-            args.config = str(wizard(args.config or ROOT / 'config.local.json'))
+        if args.setup or (args.provider is None and not args.config and not config_path().exists()):
+            args.config = str(wizard(args.config))
         if args.provider is None:
             config = load_config('configured', args.config)
-            args.provider = 'configured' if 'provider' in config['fast'] else 'codex'
+            if 'provider' not in config['fast']:
+                raise ValueError('This config needs --provider (for example, --provider codex), or role-specific provider fields. Run fast-verify setup.')
+            args.provider = 'configured'
         while curses.wrapper(application, Session(args)) == 'setup':
-            from setup import wizard
-            args.config = str(wizard(ROOT / 'config.local.json'))
+            args.config = str(wizard(args.config))
             args.provider = 'configured'
     except (EOFError, KeyboardInterrupt):
         parser.exit(130, 'Setup cancelled.\n')

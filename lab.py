@@ -14,6 +14,13 @@ import time
 import urllib.error
 import urllib.request
 
+if __package__:
+    from .paths import cases_path, user_results_dir, configure_stdio
+    from .process_utils import process_options, stop_process_tree
+else:
+    from paths import cases_path, user_results_dir, configure_stdio
+    from process_utils import process_options, stop_process_tree
+
 MODES = ('fast', 'strong', 'sequential', 'parallel')
 SOLVE = ('Answer the question accurately and concisely, following its output format. '
          'Use only supplied evidence for source-bound questions. Say unknown if evidence is insufficient.')
@@ -158,7 +165,7 @@ class CodexProvider:
                     'answer': {'type': 'string'}, 'reason': {'type': 'string'}},
                     'required': ['status', 'answer', 'reason'], 'additionalProperties': False}
                 path = Path(folder) / 'review-schema.json'
-                path.write_text(json.dumps(schema))
+                path.write_text(json.dumps(schema), encoding='utf-8')
                 command += ['--output-schema', str(path)]
             command += ['-']
             env = os.environ.copy()
@@ -166,13 +173,12 @@ class CodexProvider:
             for key in ('OPENAI_API_KEY', 'CODEX_API_KEY', 'CODEX_ACCESS_TOKEN'):
                 env.pop(key, None)
             process = await asyncio.create_subprocess_exec(*command, stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, env=env, cwd=folder)
+                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, env=env, cwd=folder, **process_options())
             try:
                 stdout, _stderr = await asyncio.wait_for(process.communicate(prompt.encode()),
                                                          self.config['timeout_seconds'])
             except (asyncio.CancelledError, TimeoutError):
-                if process.returncode is None:
-                    process.kill()
+                await stop_process_tree(process)
                 await process.communicate()
                 raise
             if process.returncode != 0:
@@ -292,7 +298,10 @@ def make_provider(name, config):
         return MockProvider()
     if name == 'openai':
         return OpenAIProvider(config)
-    from providers import HTTPProvider, ClaudeProvider, RoleProvider
+    if __package__:
+        from .providers import HTTPProvider, ClaudeProvider, RoleProvider
+    else:
+        from providers import HTTPProvider, ClaudeProvider, RoleProvider
     if name in ('api', 'anthropic'):
         return HTTPProvider(config, name)
     if name == 'claude':
@@ -301,20 +310,28 @@ def make_provider(name, config):
         return RoleProvider(config)
     if name != 'codex':
         raise ValueError('Unknown provider: ' + name)
-    if config.get('transport', 'app-server') == 'exec':
+    if __package__:
+        from .codex_server import CodexServerProvider, preferred_transport
+    else:
+        from codex_server import CodexServerProvider, preferred_transport
+    if preferred_transport(config) == 'exec':
         return CodexProvider(config)
-    from codex_server import CodexServerProvider
     return CodexServerProvider(config)
 
 
 async def main(args):
-    cases = [json.loads(line) for line in Path(args.cases).read_text().splitlines() if line.strip()]
-    from providers import load_config
+    cases = [json.loads(line) for line in Path(args.cases).read_text(encoding='utf-8').splitlines() if line.strip()]
+    if __package__:
+        from .providers import load_config
+    else:
+        from providers import load_config
     config = load_config(args.provider, args.config)
     provider = make_provider(args.provider, config)
     try:
         if args.command == 'demo':
-            case = next(c for c in cases if c['id'] == args.case)
+            case = next((c for c in cases if c['id'] == args.case), None)
+            if case is None:
+                raise ValueError('Unknown case: ' + args.case)
             result = await run(provider, args.mode, case, lambda e: print(json.dumps(e, ensure_ascii=False), flush=True))
             return int(result['status'] in ('failed', 'verification_failed'))
         if args.repeats < 1:
@@ -324,9 +341,9 @@ async def main(args):
         folder = Path(args.output) / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S') + '-' + os.urandom(3).hex())
         folder.mkdir(parents=True)
         (folder / 'manifest.json').write_text(json.dumps({'provider': args.provider, 'config': config,
-           'seed': args.seed, 'repeats': args.repeats, 'cases': cases, 'mock': args.provider == 'mock'}, ensure_ascii=False, indent=2))
+           'seed': args.seed, 'repeats': args.repeats, 'cases': cases, 'mock': args.provider == 'mock'}, ensure_ascii=False, indent=2), encoding='utf-8')
         rows = []
-        with (folder / 'runs.jsonl').open('w') as file:
+        with (folder / 'runs.jsonl').open('w', encoding='utf-8') as file:
             for repeat, case, mode in jobs:
                 result = await run(provider, mode, case)
                 result.update(repeat=repeat, grade=grade(result, case['expected']), provider=args.provider)
@@ -335,7 +352,7 @@ async def main(args):
                 file.flush()
                 print(f"{len(rows)}/{len(jobs)} {case['id']} {mode}: {result['status']}", flush=True)
         report = {'provider': args.provider, 'mock': args.provider == 'mock', 'summary': summary(rows)}
-        (folder / 'summary.json').write_text(json.dumps(report, indent=2))
+        (folder / 'summary.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
         print(json.dumps({'output': str(folder.resolve()), **report}, indent=2))
         return int(any(r['status'] in ('failed', 'verification_failed') for r in rows))
 
@@ -344,18 +361,23 @@ async def main(args):
             await asyncio.to_thread(provider.close)
 
 
-if __name__ == '__main__':
+def cli(argv=None):
+    configure_stdio()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('demo', 'bench'))
     parser.add_argument('--provider', choices=('mock', 'openai', 'codex', 'claude', 'anthropic', 'api', 'configured'), default='mock')
     parser.add_argument('--config', default=None)
-    parser.add_argument('--cases', default=str(Path(__file__).parent / 'data/cases.jsonl'))
+    parser.add_argument('--cases', default=str(cases_path()))
     parser.add_argument('--mode', choices=MODES, default='sequential')
     parser.add_argument('--case', default='multiply')
     parser.add_argument('--repeats', type=int, default=1)
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--output', default='results')
+    parser.add_argument('--output', default=str(user_results_dir()))
     try:
-        raise SystemExit(asyncio.run(main(parser.parse_args())))
+        raise SystemExit(asyncio.run(main(parser.parse_args(argv))))
     except (ValueError, KeyError, OSError) as exc:
         parser.exit(2, f'{type(exc).__name__}: {exc}\n')
+
+
+if __name__ == '__main__':
+    cli()

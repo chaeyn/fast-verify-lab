@@ -8,7 +8,12 @@ import shutil
 import subprocess
 import sys
 
-from providers import DEFAULTS, load_config
+if __package__:
+    from .providers import DEFAULTS, load_config
+    from .paths import config_path, configure_stdio
+else:
+    from providers import DEFAULTS, load_config
+    from paths import config_path, configure_stdio
 
 ROOT = Path(__file__).parent
 CHOICES = ('codex', 'claude', 'openai', 'anthropic', 'api')
@@ -33,6 +38,8 @@ def choose_role(role, read=input):
     while not model:
         model = ask('Model ID is required', read=read)
     spec = {'provider': provider, 'model': model}
+    if provider == 'codex':
+        spec['service_tier'] = 'fast' if role == 'Draft' else 'standard'
     if provider in ('codex', 'claude', 'openai'):
         effort = ask('Reasoning effort (leave empty for provider default)',
                      ('low' if role == 'Draft' else 'high') if provider == 'codex' else '', read)
@@ -49,7 +56,8 @@ def choose_role(role, read=input):
     return spec
 
 
-def wizard(path=ROOT / 'config.local.json', read=input):
+def wizard(path=None, read=input):
+    path = config_path(path=path)
     print('\nFAST VERIFY LAB · Connection setup')
     print('Show a fast draft, then review it. Accepted drafts are not repeated.')
     print('API calls use API billing. CLI calls use the login managed by each CLI.')
@@ -62,8 +70,9 @@ def wizard(path=ROOT / 'config.local.json', read=input):
     if path.exists() and ask(f'Replace {path.name}? y/N', 'n', read).lower() != 'y':
         print('Configuration unchanged.')
         return path
-    path.write_text(json.dumps(config, indent=2) + '\n')
-    print(f'\nSaved {path}. Run python3 setup.py --doctor, then python3 tui.py.')
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(config, indent=2) + '\n', encoding='utf-8')
+    print(f'\nSaved {path}. Run fast-verify doctor, then fast-verify tui.')
     return path
 
 
@@ -73,12 +82,18 @@ def doctor(path, provider=None):
     config = load_config('configured', path)
     ok = True
     print(f'Python {sys.version.split()[0]} · Config: {Path(path).resolve()}')
+    try:
+        import curses
+    except ImportError:
+        print('TUI support: unavailable. Install the tui extra on Windows or a Python build with curses on Unix.')
+    else:
+        print('TUI support: installed (an interactive terminal is required).')
     for role in ('fast', 'strong'):
         spec = config[role]
         name = spec.get('provider', provider or 'not configured')
         print(f'{role}: {name} / {spec.get("model", "missing model")}')
-        if not spec.get('model') or spec['model'].startswith('SET_'):
-            print('  Missing model ID. Run python3 setup.py.'); ok = False
+        if not isinstance(spec.get('model'), str) or not spec['model'] or spec['model'].startswith('SET_'):
+            print('  Missing model ID. Run fast-verify setup.'); ok = False
         if name in ('codex', 'claude'):
             binary = shutil.which(name)
             if not binary:
@@ -91,7 +106,7 @@ def doctor(path, provider=None):
             except (OSError, subprocess.TimeoutExpired):
                 print('  Could not check login.'); ok = False
         elif name in ('api', 'openai', 'anthropic'):
-            env = spec.get('api_key_env', 'ANTHROPIC_API_KEY' if name == 'anthropic' else 'OPENAI_API_KEY')
+            env = spec.get('api_key_env', config.get('api_key_env', 'ANTHROPIC_API_KEY' if name == 'anthropic' else 'OPENAI_API_KEY'))
             present = bool(os.environ.get(env))
             print(f'  {env}: ' + ('set' if present else 'missing')); ok &= present
         elif name != 'mock':
@@ -100,17 +115,22 @@ def doctor(path, provider=None):
     return ok
 
 
-if __name__ == '__main__':
+def main(argv=None):
+    configure_stdio()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--config', default=str(ROOT / 'config.local.json'))
+    parser.add_argument('--config')
     parser.add_argument('--doctor', action='store_true')
     parser.add_argument('--provider', choices=CHOICES, help='Provider for a legacy single-provider config')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     try:
         if args.doctor:
-            raise SystemExit(0 if doctor(args.config, args.provider) else 1)
+            raise SystemExit(0 if doctor(config_path(args.provider or 'configured', args.config), args.provider) else 1)
         wizard(args.config)
     except (EOFError, KeyboardInterrupt):
         print('\nSetup cancelled.'); raise SystemExit(130)
     except (OSError, ValueError, KeyError) as exc:
         parser.exit(2, f'Setup failed: {exc}\n')
+
+
+if __name__ == '__main__':
+    main()

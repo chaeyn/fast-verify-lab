@@ -13,6 +13,7 @@ from lab import make_provider, run
 CONFIG={'timeout_seconds':3,'fast':{'model':'test-fast','reasoning_effort':'low','service_tier':'fast'},
         'strong':{'model':'test-strong','reasoning_effort':'high','service_tier':'standard'}}
 
+@unittest.skipIf(os.name == 'nt', 'POSIX App Server transport; Windows uses Codex exec')
 class ServerTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.folder=tempfile.TemporaryDirectory()
@@ -82,6 +83,68 @@ class ServerTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(RuntimeError):
                 await asyncio.wait_for(task,3)
         finally:await client.close()
+
+    async def test_crashed_server_restart_removes_old_working_directory(self):
+        client=AppServerClient(CONFIG)
+        try:
+            await client.start()
+            old_folder=client.folder.name
+            client.process.kill()
+            await client.process.wait()
+            result=await client.generate(CONFIG['fast'],'draft','17*19',None,None,None)
+            self.assertEqual(result['text'],'323')
+            self.assertFalse(Path(old_folder).exists())
+            self.assertNotEqual(client.folder.name,old_folder)
+        finally:await client.close()
+
+    async def test_cancel_before_turn_id_stops_untracked_generation(self):
+        client=AppServerClient(CONFIG)
+        request=client.request
+        ready=asyncio.Event()
+        async def delayed_response(method,params):
+            response=await request(method,params)
+            if method=='turn/start':
+                ready.set()
+                await asyncio.Event().wait()
+            return response
+        try:
+            with patch.object(client,'request',side_effect=delayed_response):
+                task=asyncio.create_task(client.generate(CONFIG['fast'],'draft','SLOW',None,None,None))
+                await asyncio.wait_for(ready.wait(),3)
+                process=client.process
+                task.cancel()
+                with self.assertRaises(asyncio.CancelledError):await task
+            self.assertIsNotNone(process.returncode)
+            self.assertIsNone(client.process)
+            self.assertEqual(client.notifications,{})
+            result=await client.generate(CONFIG['fast'],'draft','17*19',None,None,None)
+            self.assertEqual(result['text'],'323')
+        finally:await client.close()
+
+    async def test_denied_credential_link_cleans_directory_without_reading_secret(self):
+        client=AppServerClient(CONFIG)
+        folders=[]
+        temporary_directory=tempfile.TemporaryDirectory
+        def record_folder(**kwargs):
+            folder=temporary_directory(**kwargs)
+            folders.append(folder.name)
+            return folder
+        with patch('codex_server.tempfile.TemporaryDirectory',side_effect=record_folder), \
+                patch.object(Path,'symlink_to',side_effect=PermissionError), \
+                patch.object(Path,'read_text',side_effect=AssertionError('Credential contents must not be read')):
+            with self.assertRaisesRegex(ValueError,'transport to exec'):
+                await client.start()
+        self.assertEqual(len(folders),1)
+        self.assertFalse(Path(folders[0]).exists())
+        self.assertIsNone(client.folder)
+        self.assertIsNone(client.process)
+
+    async def test_subprocess_start_failure_cleans_directory(self):
+        client=AppServerClient(CONFIG)
+        with patch('codex_server.asyncio.create_subprocess_exec',side_effect=OSError('start failed')):
+            with self.assertRaises(OSError):await client.start()
+        self.assertIsNone(client.folder)
+        self.assertIsNone(client.process)
 
     async def test_cross_loop_cancel_waits_for_interrupt_and_allows_reuse(self):
         provider=CodexServerProvider(CONFIG)

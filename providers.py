@@ -4,13 +4,17 @@ import json
 import os
 from pathlib import Path
 import shutil
-import signal
 import tempfile
 import time
 import urllib.error
 import urllib.request
 
-from lab import REVIEW, SOLVE, ProviderError
+if __package__:
+    from .lab import REVIEW, SOLVE, ProviderError
+    from .process_utils import process_options, stop_process_tree
+else:
+    from lab import REVIEW, SOLVE, ProviderError
+    from process_utils import process_options, stop_process_tree
 
 PROVIDERS = ('codex', 'mock', 'openai', 'anthropic', 'claude', 'api', 'configured')
 DEFAULTS = {'codex': 'config.codex.json', 'mock': 'config.example.json',
@@ -19,12 +23,17 @@ DEFAULTS = {'codex': 'config.codex.json', 'mock': 'config.example.json',
 
 
 def load_config(name, path=None):
-    target = Path(path) if path else Path(__file__).parent / DEFAULTS[name]
-    config = json.loads(target.read_text())
+    if __package__:
+        from .paths import config_path
+    else:
+        from paths import config_path
+    config = json.loads(config_path(name, path).read_text(encoding='utf-8'))
     if not isinstance(config, dict):
         raise ValueError('Config must be a JSON object')
     def has_secret(value):
-        return isinstance(value, dict) and any(k.lower() in ('api_key', 'token', 'access_token') or has_secret(v) for k, v in value.items())
+        if isinstance(value, dict):
+            return any(k.lower() in ('api_key', 'token', 'access_token') or has_secret(v) for k, v in value.items())
+        return isinstance(value, list) and any(has_secret(item) for item in value)
     if has_secret(config):
         raise ValueError('Keep credentials in environment variables, not config files')
     return config
@@ -38,8 +47,9 @@ class HTTPProvider:
         if not self.key:
             raise ValueError(f'Set {self.key_env} before running {kind}. See GUIDE.md.')
         for role in ('fast', 'strong'):
-            if not config[role].get('model') or config[role]['model'].startswith('SET_'):
-                raise ValueError('Set fast.model and strong.model in your config. Run python3 setup.py.')
+            model = config[role].get('model')
+            if not isinstance(model, str) or not model.strip() or model.startswith('SET_'):
+                raise ValueError('Set fast.model and strong.model in your config. Run fast-verify setup.')
 
     def request(self, payload):
         base = self.config.get('base_url', 'https://api.anthropic.com/v1' if self.kind == 'anthropic' else 'https://api.openai.com/v1')
@@ -59,6 +69,8 @@ class HTTPProvider:
             raise ProviderError(f'API HTTP {code}') from None
         except (urllib.error.URLError, TimeoutError):
             raise ProviderError('API connection failed or timed out') from None
+        except (ValueError, UnicodeError):
+            raise ProviderError('API returned invalid JSON') from None
 
     async def generate(self, role, stage, question, draft=None, independent=None, case=None):
         spec = self.config[role]
@@ -74,6 +86,8 @@ class HTTPProvider:
                 payload['response_format'] = {'type': 'json_object'}
         started = time.perf_counter()
         data = await asyncio.to_thread(self.request, payload)
+        if not isinstance(data, dict):
+            raise ProviderError('API returned an invalid response')
         raw = data.get('usage') or {}
         if self.kind == 'anthropic':
             if data.get('stop_reason') != 'end_turn' or any(c.get('type') == 'tool_use' for c in data.get('content', [])):
@@ -102,6 +116,10 @@ class ClaudeProvider:
         self.binary = shutil.which('claude')
         if not self.binary:
             raise ValueError('Install Claude Code and run claude auth login. See GUIDE.md.')
+        for role in ('fast', 'strong'):
+            model = config[role].get('model')
+            if not isinstance(model, str) or not model.strip() or model.startswith('SET_'):
+                raise ValueError('Set fast.model and strong.model in your config. Run fast-verify setup.')
 
     async def generate(self, role, stage, question, draft=None, independent=None, case=None):
         spec = self.config[role]
@@ -119,21 +137,22 @@ class ClaudeProvider:
                          'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX', 'CLAUDE_CODE_USE_FOUNDRY', 'CLAUDE_CODE_SIMPLE'):
                 env.pop(name, None)
             process = await asyncio.create_subprocess_exec(*command, stdin=asyncio.subprocess.PIPE,
-                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=folder, env=env, start_new_session=True)
+                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=folder, env=env, **process_options())
             prompt = json.dumps({'question': question, 'draft': draft, 'independent_answer': independent}, ensure_ascii=False)
             try:
                 stdout, _ = await asyncio.wait_for(process.communicate(prompt.encode()), self.config.get('timeout_seconds', 120))
             except (asyncio.CancelledError, TimeoutError):
-                try:
-                    os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
+                await stop_process_tree(process)
                 await process.communicate()
                 raise
             if process.returncode:
                 raise ProviderError(f'Claude Code exited with code {process.returncode}')
-            data = json.loads(stdout)
-            if data.get('is_error') or data.get('subtype') != 'success' or not data.get('result', '').strip():
+            try:
+                data = json.loads(stdout)
+            except (ValueError, UnicodeError):
+                raise ProviderError('Claude Code returned invalid JSON') from None
+            if (not isinstance(data, dict) or data.get('is_error') or data.get('subtype') != 'success'
+                    or not isinstance(data.get('result'), str) or not data['result'].strip()):
                 raise ProviderError('Claude Code did not complete with an answer')
         raw = data.get('usage') or {}
         cached = raw.get('cache_read_input_tokens', 0)
@@ -154,7 +173,10 @@ class RoleProvider:
                 raise ValueError(f'Set {role}.provider to codex, claude, openai, anthropic, api, or mock')
 
     def client(self, role):
-        from lab import make_provider
+        if __package__:
+            from .lab import make_provider
+        else:
+            from lab import make_provider
         connection_fields = ('base_url', 'api_key_env', 'transport', 'timeout_seconds', 'max_output_tokens', 'json_mode')
         spec = self.config[role]
         connection = {k:v for k,v in self.config.items() if k not in ('fast', 'strong')}

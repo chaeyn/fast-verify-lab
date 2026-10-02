@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from lab import make_provider, run
 from providers import HTTPProvider, RoleProvider, ClaudeProvider, load_config
-from setup import wizard, doctor
+from configure import wizard, doctor
 
 
 class HTTPTests(unittest.IsolatedAsyncioTestCase):
@@ -97,6 +97,7 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(factory.call_args.args[1]['fast']['model'],'fast-model')
             self.assertEqual(factory.call_args.args[1]['strong']['model'],'review-model')
 
+    @unittest.skipIf(os.name == 'nt', 'POSIX executable fixture; process cleanup has separate portable tests')
     async def test_claude_cli_isolation_and_timeout_cleanup(self):
         with tempfile.TemporaryDirectory() as folder:
             stub=Path(folder)/'claude'
@@ -134,8 +135,8 @@ class SetupTests(unittest.TestCase):
 
     def test_doctor_checks_claude_login_for_claude_preset(self):
         path = Path(__file__).parents[1] / 'config.claude.json'
-        with patch('setup.shutil.which', return_value='/test/claude'), \
-             patch('setup.subprocess.run', return_value=SimpleNamespace(returncode=1)) as command, \
+        with patch('configure.shutil.which', return_value='/test/claude'), \
+             patch('configure.subprocess.run', return_value=SimpleNamespace(returncode=1)) as command, \
              patch('builtins.print'):
             self.assertFalse(doctor(path))
             self.assertEqual(command.call_args.args[0], ['/test/claude', 'auth', 'status'])

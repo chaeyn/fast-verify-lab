@@ -1,0 +1,10 @@
+include *.md Dockerfile .dockerignore
+include config.codex.json config.claude.json config.example.json config.api.json config.anthropic.json
+include data/cases.jsonl
+recursive-include docs *.md
+recursive-include tests *.py
+recursive-include scripts *.py
+exclude config.local.json
+prune results
+recursive-include examples *.md *.json *.jsonl
+recursive-include .github *.yml *.md
